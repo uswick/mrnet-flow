@@ -1,0 +1,48 @@
+[Operators numProperties="0"]
+
+[|InFile numProperties="1" name0="inFName" val0="source"]
+[Operator numProperties="3" name0="ID" val0="0" name1="numInputs" val1="0" name2="numOutputs" val2="1"]
+[|ExplicitKeyVal numProperties="0"]
+[KeyVal numProperties="0"][Tuple numProperties="1" name0="numFields" val0="2"]
+[Scalar numProperties="1" name0="type" val0="2"][/Scalar][Scalar numProperties="1" name0="type" val0="2"]
+[/Scalar][/Tuple]
+[Record numProperties="3" name0="field_0" val0="name" name1="field_1" val1="valSq" name2="numFields" val2="2"]
+[Scalar numProperties="1" name0="type" val0="1"][/Scalar][Scalar numProperties="1" name0="type" val0="5"]
+[/Scalar]
+[/Record]
+[/ExplicitKeyVal]
+[/InFile]
+
+[|Scatter numProperties="0"]
+[Operator numProperties="3" name0="ID" val0="1" name1="numInputs" val1="1" name2="numOutputs" val2="3"]
+[/Scatter]
+
+[|SynchedKeyValJoin numProperties="0"]
+[Operator numProperties="3" name0="ID" val0="2" name1="numInputs" val1="3" name2="numOutputs" val2="1"]
+[/SynchedKeyValJoin]
+
+[|OutFile numProperties="1" name0="outFName" val0="sink"]
+[Operator numProperties="3" name0="ID" val0="3" name1="numInputs" val1="1" name2="numOutputs" val2="0"]
+[/OutFile]
+
+[/Operators]
+
+
+[Streams numProperties="0"]
+
+[Stream numProperties="4" name0="fromOpID" val0="0" name1="fromOpPort" val1="0" name2="toOpID" val2="1" name3="toOpPort" val3="0"]
+[/Stream]
+
+[Stream numProperties="4" name0="fromOpID" val0="1" name1="fromOpPort" val1="0" name2="toOpID" val2="2" name3="toOpPort" val3="0"]
+[/Stream]
+
+[Stream numProperties="4" name0="fromOpID" val0="1" name1="fromOpPort" val1="1" name2="toOpID" val2="2" name3="toOpPort" val3="1"]
+[/Stream]
+
+[Stream numProperties="4" name0="fromOpID" val0="1" name1="fromOpPort" val1="2" name2="toOpID" val2="2" name3="toOpPort" val3="2"]
+[/Stream]
+
+[Stream numProperties="4" name0="fromOpID" val0="2" name1="fromOpPort" val1="0" name2="toOpID" val2="3" name3="toOpPort" val3="0"]
+[/Stream]
+
+[/Streams]
