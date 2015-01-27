@@ -7,6 +7,9 @@
 
 using namespace std;
 
+int BE_ARG_CNT = 0 ;
+char** BE_ARGS = NULL ;
+
 // Registers deserializers for all the standard Schemas and Operators
 static void registerDeserializersFront() {
     // Schemas

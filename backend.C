@@ -300,10 +300,16 @@ void createSource2SinkFlowBackend(const char *outFName, const char *sourceFName,
     }
 }
 
+int BE_ARG_CNT = 0 ;
+char** BE_ARGS = NULL ;
 
 int main(int argc, char** argv) {
+    printf("starting backend with MRNEt param initialization.. !! \n");
+    //init params
+    BE_ARG_CNT = argc ;
+    BE_ARGS = argv ;
+
     const char* opConfigFName="opconfig_backend";
-    if(argc>1) opConfigFName = argv[1];
 
     unsigned int numStreams=3;
 

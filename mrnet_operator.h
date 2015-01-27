@@ -106,6 +106,7 @@ public:
     MRN::Stream *stream;
     std::set< MRN::Rank > peers;
     std::vector< MRN::PacketPtr > *packets_in;
+    std::vector< MRN::PacketPtr > *packets_out;
 
 }  ;
 /*
@@ -209,6 +210,7 @@ public:
 * - use schema to deserialize binary data coming in
 *
 * */
+//definition of BE params
 
 class MRNetBEOutOperator : public AsynchOperator {
 private:

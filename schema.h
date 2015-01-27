@@ -51,8 +51,11 @@ class StreamBuffer {
     //start position of the sttream
     int start ;
 
-    StreamBuffer(const void* out){
+    StreamBuffer(const void* out, int max_size){
         this->buffer = out ;
+        //init sizes
+        this->max_size = max_size;
+        this->current_total_size = 0 ;
         //init start/end to first pos
         seek = 0 ;
         start = 0 ;

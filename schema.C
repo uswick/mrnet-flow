@@ -63,6 +63,8 @@ DataPtr Schema::readData(FILE* f) {
 
 int Schema::bufwrite(const void* data, int data_size, StreamBuffer * buffer){
     int write_total =  buffer->current_total_size + data_size;
+//    printf("Schema::bufwrite [start] data_size %d current_total_size %d  write_total : %d \n",
+//            data_size, buffer->current_total_size, write_total);
 
     //reallocate logic
     if(write_total > (buffer->max_size)){
@@ -74,12 +76,12 @@ int Schema::bufwrite(const void* data, int data_size, StreamBuffer * buffer){
     //if we have enough space left until end to write the data
     if((buffer->seek + data_size) <= buffer->max_size){
         //memcopy the current data portion into buffer
-        memcpy((void*)buffer->buffer, data, data_size);
+        memcpy(((char*)buffer->buffer + buffer->seek), data, data_size);
     }else{
         int bytes_spill = (buffer->seek + data_size) % buffer->max_size;
         int bytes_to_end = data_size - bytes_spill;
         //copy first half
-        memcpy(((char*)buffer->buffer+ buffer->seek), data, bytes_to_end);
+        memcpy(((char*)buffer->buffer + buffer->seek), data, bytes_to_end);
         //copy second half
         memcpy((char*)buffer->buffer, ((char*)data + bytes_to_end), bytes_spill);
     }
@@ -88,6 +90,8 @@ int Schema::bufwrite(const void* data, int data_size, StreamBuffer * buffer){
     //update seek position
     buffer->seek = (buffer->seek + data_size) % buffer->max_size;
 
+//    printf("Schema::bufwrite [before end] data_size %d current_total_size %d  write_total : %d max_size allowed : %d seek %d start %d \n",
+//            data_size, buffer->current_total_size, write_total, buffer->max_size, buffer->seek, buffer->start);
     return buffer->current_total_size ;
 }
 
@@ -117,6 +121,7 @@ int Schema::bufread(void* input_buf, int size, StreamBuffer * buffer){
         buffer->start = (buffer->start + size) % buffer->max_size;
         //update total size
         buffer->current_total_size -= size;
+        return 1;
     }
     //we don't have enough data available for this operation
     //return error
@@ -356,6 +361,8 @@ propertiesPtr TupleSchemaConfig::setProperties(const std::vector<SchemaConfigPtr
 // Loads the RecordSchema from a configuration file. add() or finalize() may not be called after this constructor.
 RecordSchema::RecordSchema(properties::iterator props) : Schema(props.next()) {
   assert(props.name()=="Record");
+
+  schemaFinalized = false;
   
   int numFields = props.getInt("numFields");
   
@@ -703,7 +710,8 @@ void ExplicitKeyValSchema::serialize(DataPtr obj_arg, StreamBuffer * out) const 
     // Write out the number of key mappings we'll emit
     unsigned int numKeys = obj->getData().size();
 //    fwrite(&numKeys, sizeof(unsigned int), 1, out);
-    bufwrite(&numKeys,sizeof(unsigned int), out);
+    int total_written = bufwrite(&numKeys,sizeof(unsigned int), out);
+//    printf("Schema::ExplicitKeyValSchema bufwrite numkeys... total_written : %d \n", total_written);
 
     // Iterate through each key->value mapping in obj
     for(std::map<DataPtr, std::list<DataPtr> >::const_iterator i=obj->getData().begin(); i!=obj->getData().end(); i++) {
@@ -760,13 +768,19 @@ DataPtr ExplicitKeyValSchema::deserialize(FILE* in) const {
 
 
 DataPtr ExplicitKeyValSchema::deserialize(StreamBuffer * in) const {
+    printf("Schema::ExplicitKeyValSchema[deserialize] start ...\n");
+
     ExplicitKeyValMapPtr kvMap = makePtr<ExplicitKeyValMap>();
     map<DataPtr, list<DataPtr> >& data = kvMap->getDataMod();
 
     int ret ;
     // Read the number of keys
     unsigned int numKeys;
+
+    printf("Schema::ExplicitKeyValSchema[deserialize] bufread numkeys...\n");
     ret = bufread(&numKeys, sizeof(unsigned int), in);
+    printf("Schema::ExplicitKeyValSchema[deserialize] bufread numkeys done.. keys : %d  ret : %d ...\n", numKeys, ret);
+
     if(ret == -1) return NULLData;
 
     // Load that number of Keys

@@ -369,6 +369,19 @@ void InFileOperator::work() {
     
     // Read the next Data object on from inFile
     DataPtr data = schema->deserialize(inFile);
+
+      //todo remove
+    char *tmp_buffer = (char *) malloc(10000);
+    StreamBuffer bufferStream(tmp_buffer, 10000);
+    schema->serialize(data, &bufferStream);
+
+    printf("InfileOp:BE trying to print data object:\n");
+    int j = 0 ;
+      for( j = 0 ; j < bufferStream.current_total_size ; j++){
+          printf("%c",tmp_buffer[j]);
+      }
+    printf("\n=========================================== \n\n\n");
+
     outStreams[0]->transfer(data);
     fgetc(inFile);
   }

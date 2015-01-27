@@ -13,8 +13,12 @@
 #include "filter_init.h"
 
 #include <string.h>
+#include <unistd.h>
 
 using namespace MRN ;
+
+int BE_ARG_CNT = 0 ;
+char** BE_ARGS = NULL ;
 /**
 * each filter initialize a Flow
 * minimally each flow has a
@@ -51,10 +55,8 @@ void defaultFlowFilter(std::vector< PacketPtr > &packets_in,
         PacketPtr & /* params */,
         const TopologyLocalInfo &inf) {
 
-//#ifdef DEBUG_ON
-    fprintf(stdout, "[MRNet FILTER METHOD just started.. PID : %d ]\n", getpid());
-    fflush(stdout);
-//#endif
+    printf("starting mrnet filter.... PID : %d !! \n", getpid());
+
     Network *net = const_cast< Network * >( inf.get_Network() );
     PacketPtr first_packet = packets_in[0];
     int stream_id = first_packet->get_StreamId();
@@ -77,6 +79,7 @@ void defaultFlowFilter(std::vector< PacketPtr > &packets_in,
     MRNetInfo minfo;
     minfo.net = net;
     minfo.packets_in = &packets_in;
+    minfo.packets_out = &packets_out;
     minfo.peers = peers ;
     minfo.stream = stream;
     minfo.stream_id =stream_id;

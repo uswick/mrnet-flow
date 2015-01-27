@@ -109,6 +109,14 @@ propertiesPtr MRNetBackendOutOperatorConfig::setProperties(propertiesPtr props) 
 ***************************************/
 
 MRNetFilterSourceOperator::MRNetFilterSourceOperator(properties::iterator props) : SourceOperator(props.next()) {
+    //init stream buffer
+    char *internalBuffer = (char *) malloc(10000);
+    streamBuf = new StreamBuffer(internalBuffer, 10000);
+
+    assert(props.getContents().size()==1);
+    propertiesPtr schemaProps = *props.getContents().begin();
+    schema = SchemaRegistry::create(schemaProps);
+    assert(schema);
 }
 
 
@@ -117,6 +125,7 @@ void MRNetFilterSourceOperator::setMRNetInfoObject(MRNetInfo &inf) {
 }
 
 void MRNetFilterSourceOperator::work() {
+    printf("mrnet filter source operator.... PID : %d !! \n", getpid());
     unsigned length;
     bool be_node;
     for (unsigned int i = 0; i < mrn_info.packets_in->size(); i++) {
@@ -135,6 +144,8 @@ void MRNetFilterSourceOperator::work() {
                 continue;
             }
         }
+        printf("mrnet filter source operator unpacking/deserialization on progress.. PID : %d !! \n", getpid());
+
         char *recv_Ar;
         curr_packet->unpack("%ac", &recv_Ar, &length);
 
@@ -143,7 +154,24 @@ void MRNetFilterSourceOperator::work() {
         assert((unsigned int) cur_inlet_rank < outStreams.size());
 
         Schema::bufwrite(recv_Ar, length, streamBuf);
+        fprintf(stdout, "FILTER: Starting to recv serial data..\n");
+        int j = 0 ;
+        for( j = 0 ; j < streamBuf->current_total_size ; j++){
+            printf("%c",((char*)streamBuf->buffer)[j]);
+        }
+        printf("\n---------------- \n\n\n");
+        printf("print schema --> \n");
+        schema->str(cout);
+        printf("print schema done.. --> \n");
         DataPtr data = schema->deserialize(streamBuf);
+
+        if(data == NULLData){
+            printf("returned NULL data .. \n");
+        }else{
+            printf("returned data OK current rank : %d ..printing ==> \n", cur_inlet_rank);
+            data->str(cout, schema);
+            printf("\n---------------- \n\n");
+        }
         //route data ptr to respective outgoing stream
         if (data != NULLData)
             outStreams[(unsigned int) cur_inlet_rank]->transfer(data);
@@ -194,33 +222,45 @@ MRNetFilterOutOperator::MRNetFilterOutOperator(properties::iterator props) : Asy
 
 void MRNetFilterOutOperator::setMRNetInfoObject(MRNetInfo &inf) {
     mrn_info = inf;
+    packets_out = inf.packets_out;
 }
 
 void MRNetFilterOutOperator::work(unsigned int inStreamIdx, DataPtr inData) {
+    printf("mrnet filter out operator started.... PID : %d !! \n", getpid());
     bool final_packet = false;
     Packet *pckt;
 
     assert(inStreamIdx == 0);
-    char *out_buffer = (char *) malloc(1000);
+    char *out_buffer = (char *) malloc(10000);
 
     //create stream buffer
-    StreamBuffer bufferStream(out_buffer);
+    StreamBuffer bufferStream(out_buffer, 10000);
 
     //create serialized stream on buffer using schema and data obj
     inStreams[0]->getSchema()->serialize(inData, &bufferStream);
 
     //todo determine final packet
+    fprintf(stdout, "FILTER - OUT: Starting to send data.. total bytes : %d \n", bufferStream.current_total_size);
+    int j = 0 ;
+    for( j = 0 ; j < bufferStream.current_total_size ; j++){
+        printf("%c",((char*)bufferStream.buffer)[j]);
+    }
+    printf("\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ \n\n\n");
 
 
     if (!final_packet) {
+        printf("mrnet filter out operator preparing packet  PID : %d !! \n", getpid());
         pckt = new Packet(mrn_info.stream_id, mrn_info.tag_id, "%ac", bufferStream.buffer,
                 bufferStream.current_total_size);
     } else {
+        printf("mrnet filter out operator preparing [Final] packet  PID : %d !! \n", getpid());
         pckt = new Packet(mrn_info.stream_id, FLOW_EXIT, "%ac", bufferStream.buffer,
                 bufferStream.current_total_size);
     }
     PacketPtr new_packet(pckt);
     packets_out->push_back(new_packet);
+    printf("mrnet filter out operator push back upstream  PID : %d !! \n", getpid());
+
 }
 
 
@@ -272,7 +312,7 @@ MRNetFESourceOperator::MRNetFESourceOperator(properties::iterator props) : Sourc
 
     //init stream buffer
     char *internalBuffer = (char *) malloc(10000);
-    streamBuf = new StreamBuffer(internalBuffer);
+    streamBuf = new StreamBuffer(internalBuffer, 10000);
 
     assert(props.getContents().size() == 1);
     propertiesPtr schemaProps = *props.getContents().begin();
@@ -313,7 +353,7 @@ int MRNetFESourceOperator::initMRNet() {
         delete net;
         return -1;
     }
-
+    printf("loading mrnet filter done !! \n");
     // A Broadcast communicator contains all the back-ends
     comm_BC = net->get_BroadcastCommunicator();
 
@@ -345,7 +385,9 @@ void MRNetFESourceOperator::work() {
     }
 
     while (true) {
+        printf("FE init done... waiting for packet ..\n");
         int retval = active_stream->recv(&tag, p);
+        printf("FE waiting for packet done ..\n");
 
         //check errors in incoming communication
         if (retval == 0) {
@@ -372,6 +414,14 @@ void MRNetFESourceOperator::work() {
             fprintf(stderr, "PROTOCOL END stream::unpack() failure\n");
             return;
         }
+
+        fprintf(stdout, "FE: Starting to recv serial data from children  ==> total bytes : %d \n", length);
+        int j = 0 ;
+        for( j = 0 ; j < length ; j++){
+            printf("%c",recv_Ar[j]);
+        }
+        printf("\n---------------- \n\n\n");
+
         //deserialize stream data using using a incoming stream Buffer and inject to outgoing FLOW
         //filters at front end would generally produce a merged stream using MRNet filters
         //TODO
@@ -451,10 +501,11 @@ MRNetFESourceOperator::~MRNetFESourceOperator() {
 /**********************************************
 ***** MRNetBEOutOperator **************
 **********************************************/
-
+extern int BE_ARG_CNT ;
+extern char** BE_ARGS;
 
 MRNetBEOutOperator::MRNetBEOutOperator(properties::iterator props) : AsynchOperator(props.next()) {
-    net = Network::CreateNetworkBE(0, NULL);
+    net = Network::CreateNetworkBE(BE_ARG_CNT, BE_ARGS);
     init = false;
 }
 
@@ -467,6 +518,7 @@ void MRNetBEOutOperator::work(unsigned int inStreamIdx, DataPtr inData) {
         //do this at start - get the tag from FE for initial communication
         if (!init) {
             rc = net->recv(&tag, p, &stream);
+            printf("BE: recieved initial token \n");
             if (rc == -1) {
                 fprintf(stderr, "BE: Network::recv() failure\n");
                 tag = FLOW_EXIT;
@@ -475,6 +527,7 @@ void MRNetBEOutOperator::work(unsigned int inStreamIdx, DataPtr inData) {
                 // a stream was closed
                 tag = FLOW_EXIT;
             }
+            tag = FLOW_START_PHASE;
         } else {
             //if this is not the init phase we always assume a FLOW is active
             tag = FLOW_START_PHASE;
@@ -486,6 +539,7 @@ void MRNetBEOutOperator::work(unsigned int inStreamIdx, DataPtr inData) {
                 if (!init) {
                     p->unpack("%d ", &recv_val);
                     assert(recv_val > 0);
+                    printf("BE: recieved token value : %d \n", recv_val);
                     //finished init phase
                     init = true;
                 }
@@ -496,13 +550,24 @@ void MRNetBEOutOperator::work(unsigned int inStreamIdx, DataPtr inData) {
                 assert(inStreamIdx == 0);
                 char *out_buffer = (char *) malloc(1000);
 
+                fprintf(stdout, "BE: Init buffer..\n");
                 //create stream buffer
-                StreamBuffer bufferStream(out_buffer);
+                StreamBuffer bufferStream(out_buffer, 1000);
 
+                fprintf(stdout, "BE: Init Stream..\n");
                 //create serialized stream on buffer using schema and data obj
                 inStreams[0]->getSchema()->serialize(inData, &bufferStream);
+                fprintf(stdout, "BE: Starting to send serialized data..\n");
+                int j = 0 ;
+                for( j = 0 ; j < bufferStream.current_total_size ; j++){
+                    printf("%c",out_buffer[j]);
+                }
+                printf("\n---------------- \n\n\n");
+                //test
+//                char tmp[10] = "abcdef123";
 
-                if (stream->send(tag, "%ac", out_buffer) == -1) {
+                if (stream->send(tag, "%ac", out_buffer, bufferStream.current_total_size) == -1) {
+//                if (stream->send(tag, "%ac", tmp, 10) == -1) {
                     fprintf(stderr, "BE: stream::send(%%d) failure in FLOW_START_PHASE\n");
                     tag = FLOW_EXIT;
                     break;
