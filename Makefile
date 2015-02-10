@@ -53,17 +53,20 @@ mrnop: dataTest front backend filter.so
 mrnet_operator.o: mrnet_operator.C mrnet_operator.h mrnet_flow.h
 	${CXX} -g ${MRNET_CXXFLAGS} -I/usr/include mrnet_operator.C -c -o mrnet_operator.o
 
+mrnet_flow.o: mrnet_flow.C mrnet_flow.h
+	${CXX} -g ${MRNET_CXXFLAGS} -I/usr/include mrnet_flow.C -c -o mrnet_flow.o
+
 filter_init.o: mrnet_operator.h mrnet_flow.h filter_init.h
 	${CXX} -g  ${MRNET_CXXFLAGS} -I/usr/include filter_init.C -c -o filter_init.o
 
-front: front.C mrnet_operator.o *.h schema.o data.o operator.o process.o sight_common.o utils.o
-	${CXX} -g ${MRNET_CXXFLAGS} -I/usr/include front.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o -o front ${MRNET_LIBS}
+front: front.C mrnet_operator.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
+	${CXX} -g ${MRNET_CXXFLAGS} -I/usr/include front.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o front ${MRNET_LIBS}
 
-backend: backend.C mrnet_operator.o *.h schema.o data.o operator.o process.o sight_common.o utils.o
-	${CXX} -g ${MRNET_CXXFLAGS} -I/usr/include backend.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o -o backend ${MRNET_LIBS}
+backend: backend.C mrnet_operator.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
+	${CXX} -g ${MRNET_CXXFLAGS} -I/usr/include backend.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o backend ${MRNET_LIBS}
 
-filter.so: filter.C mrnet_operator.o filter_init.o *.h schema.o data.o operator.o process.o sight_common.o utils.o
-	${CXX} -g ${MRNET_CXXFLAGS} ${MRNET_SOFLAGS} -I/usr/include filter.C mrnet_operator.o filter_init.o schema.o data.o operator.o process.o sight_common.o utils.o -o filter.so ${MRNET_LIBS}
+filter.so: filter.C mrnet_operator.o filter_init.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
+	${CXX} -g ${MRNET_CXXFLAGS} ${MRNET_SOFLAGS} -I/usr/include filter.C mrnet_operator.o filter_init.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o filter.so ${MRNET_LIBS}
 
 clean:
 	rm -f *.o dataTest front backend filter.so
