@@ -318,7 +318,8 @@ int main(int argc, char** argv) {
 
     const char* opConfigFName="opconfig_backend";
 
-    unsigned int numStreams=3;
+    //unsigned int numStreams=3;
+    unsigned int numStreams=get_num_streams();
 
     // First, register the deserializers for all the Schemas and Operators that may be used
     registerDeserializersBackend();

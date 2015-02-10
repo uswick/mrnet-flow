@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include "filter_init.h"
 #include "mrnet_operator.h"
+#include "mrnet_flow.h"
 
 //SharedPtr<SourceOperator> source_op;
 SharedPtr<MRNetFilterOutOperator> out_op_filter;
@@ -309,7 +310,7 @@ glst_t filter_flow_init(){
 
     // Create a Flow and write it out to a configuration file.
 //    createFilterSource2OutFlow(opConfigFName , fileSchema);
-    createFilterSource2Join2OutFlow(opConfigFName, fileSchema, 3);
+    createFilterSource2Join2OutFlow(opConfigFName, fileSchema,  get_num_streams());
 
     FILE* opConfig = fopen(opConfigFName, "r");
     FILEStructureParser parser(opConfig, 10000);

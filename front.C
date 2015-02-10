@@ -2,6 +2,7 @@
 #include "schema.h"
 #include "operator.h"
 #include "mrnet_operator.h"
+#include "mrnet_flow.h"
 #include <iostream>
 #include <stdio.h>
 
@@ -301,7 +302,7 @@ int main(int argc, char** argv) {
     const char* opConfigFName="opconfig_frontend";
     if(argc>1) opConfigFName = argv[1];
 
-    unsigned int numStreams=3;
+    unsigned int numStreams= get_num_streams();
 
     // First, register the deserializers for all the Schemas and Operators that may be used
     registerDeserializersFront();
