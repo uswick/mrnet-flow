@@ -26,6 +26,7 @@ a) build the project, modify $REPO_PATH and $BOOST_INSTALL_DIR
    to include your MRNet and Boost installation directories
     
    --Notes-- 
+   
     1. if boost/mrnet is in your System Path then REPO_PATH or
        BOOST_INSTALL_DIR shall be /usr/local
        
