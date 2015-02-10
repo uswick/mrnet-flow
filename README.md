@@ -14,11 +14,13 @@ $ make clean mrnop
 
 
 How to build/run without MRNet->
+---------------------------------------
 $ make clean dataTest
 
------------------------------------------
 
-How to run ->
+
+How to run->
+---------------------------------------
 
 a) build the project, modify $REPO_PATH and $BOOST_INSTALL_DIR 
    to include your MRNet and Boost installation directories
