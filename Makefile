@@ -1,25 +1,27 @@
-REPO_PATH=/media/sf_Appcode/Flow/Flow/flow/mrnet
+REPO_PATH=/u/uswickra/MRnet/mrnet_4.1.0
+BOOST_INSTALL_DIR=/u/uswickra/boost_1_55/boost_1_55_0/install
 
 MRNET_CXXFLAGS = -g -fPIC -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS  \
-				-I${REPO_PATH}/mrnet/include/mrnet  \
-				-I${REPO_PATH}/mrnet/include  \
-				-I${REPO_PATH}/mrnet/build/x86_64-unknown-linux-gnu/  \
-        		-I${REPO_PATH}/mrnet/include/xplat \
-        		-I${REPO_PATH}/mrnet/xplat/include \
-                -I${ROOT_PATH}/mrnet \
+				-I${REPO_PATH}/include/mrnet  \
+				-I${BOOST_INSTALL_DIR}/include  \
+				-I${REPO_PATH}/include  \
+				-I${REPO_PATH}/build/x86_64-unknown-linux-gnu/  \
+        		-I${REPO_PATH}/include/xplat \
+        		-I${REPO_PATH}/xplat/include \
+                -I${ROOT_PATH}/ \
                     -Dos_linux
 
 CXX = g++
 #CXX = clang++
 CXXFLAGS = -fPIC
 
-LDFLAGS = -Wl,-E
+LDFLAGS = -L${BOOST_INSTALL_DIR}/lib -lboost_thread -lboost_system
 
 #MRNET_SOFLAGS =
 MRNET_SOFLAGS = -fPIC -shared -rdynamic
 
 #MRNET_LIBS = -L${REPO_PATH}/mrnet/lib -lmrnet -lxplat -lm -lpthread -ldl
-MRNET_LIBS = ${REPO_PATH}/mrnet/lib/libmrnet.a.4.0.0  ${REPO_PATH}/mrnet/lib/libxplat.a.4.0.0 -lm -lpthread -ldl -lboost_system -lboost_timer -lboost_thread
+MRNET_LIBS = ${REPO_PATH}/lib/libmrnet.a.4.0.0  ${REPO_PATH}/lib/libxplat.a.4.0.0 -L${BOOST_INSTALL_DIR}/lib -lm -lpthread -ldl -lboost_system -lboost_timer -lboost_thread -lboost_chrono
 
 all: dataTest
 
@@ -42,7 +44,7 @@ utils.o: utils.C utils.h
 	${CXX} -g ${CXXFLAGS} -I/usr/include utils.C -c -o utils.o
 
 dataTest: dataTest.C *.h schema.o data.o operator.o process.o sight_common.o utils.o
-	${CXX} -g ${CXXFLAGS} -I/usr/include dataTest.C schema.o data.o operator.o process.o sight_common.o utils.o -o dataTest -lboost_thread
+	${CXX} -g ${CXXFLAGS} -I/usr/include dataTest.C schema.o data.o operator.o process.o sight_common.o utils.o -o dataTest ${LDFLAGS}
 
 #MRNet integration specific targets
 .PHONY: mrnop
@@ -62,18 +64,6 @@ backend: backend.C mrnet_operator.o *.h schema.o data.o operator.o process.o sig
 
 filter.so: filter.C mrnet_operator.o filter_init.o *.h schema.o data.o operator.o process.o sight_common.o utils.o
 	${CXX} -g ${MRNET_CXXFLAGS} ${MRNET_SOFLAGS} -I/usr/include filter.C mrnet_operator.o filter_init.o schema.o data.o operator.o process.o sight_common.o utils.o -o filter.so ${MRNET_LIBS}
-
-.PHONY: testmrnet
-testmrnet: ifront iback ifilter.so
-
-ifront: IntegerAddition_FE.C IntegerAddition.h
-	${CXX} -g ${MRNET_CXXFLAGS} -I/usr/include IntegerAddition_FE.C -o intfront ${MRNET_LIBS}
-
-iback: IntegerAddition_BE.C IntegerAddition.h
-	${CXX} -g ${MRNET_CXXFLAGS} -I/usr/include IntegerAddition_BE.C -o intback ${MRNET_LIBS}
-
-ifilter.so: IntegerAdditionFilter.C IntegerAddition.h
-	${CXX} -g ${MRNET_CXXFLAGS} ${MRNET_SOFLAGS} -I/usr/include IntegerAdditionFilter.C -o intfilter.so ${MRNET_LIBS}
 
 clean:
 	rm -f *.o dataTest front backend filter.so

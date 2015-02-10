@@ -229,7 +229,7 @@ bool TupleSchema::operator==(const SchemaPtr& that_arg) const {
     
   if(tFields.size() != that->tFields.size()) return false;
     
-  for(typename std::vector<SchemaPtr>::const_iterator itThis = tFields.begin(), itThat=that->tFields.begin();
+  for(std::vector<SchemaPtr>::const_iterator itThis = tFields.begin(), itThat=that->tFields.begin();
       itThat!=tFields.end(); itThis++, itThat++) {
     if(*itThis  != *itThat || !(*itThis == *itThat))
       return false;
@@ -246,7 +246,7 @@ bool TupleSchema::operator<(const SchemaPtr& that_arg) const {
   if(tFields.size() < that->tFields.size()) return true;
   if(tFields.size() < that->tFields.size()) return false;
   
-  typename std::vector<SchemaPtr>::const_iterator itThis = tFields.begin(), itThat=that->tFields.begin();
+  std::vector<SchemaPtr>::const_iterator itThis = tFields.begin(), itThat=that->tFields.begin();
   for(; itThis!=tFields.end() && itThat!=that->tFields.end(); itThis++, itThat++) {
     if(*itThis  < *itThat) return true;
     if(*itThis  > *itThat) return false;
@@ -457,7 +457,7 @@ bool RecordSchema::operator==(const SchemaPtr& that_arg) const {
   
   if(rFields.size() != that->rFields.size()) return false;
   
-  for(typename std::map<std::string, SchemaPtr>::const_iterator itThis = rFields.begin(), itThat=that->rFields.begin();
+  for(std::map<std::string, SchemaPtr>::const_iterator itThis = rFields.begin(), itThat=that->rFields.begin();
       itThat!=rFields.end(); itThis++, itThat++) {
     if(itThis->first  != itThat->first ||
        !(itThis->second == itThat->second)) 
@@ -475,7 +475,7 @@ bool RecordSchema::operator<(const SchemaPtr& that_arg) const {
   if(rFields.size() < that->rFields.size()) return true;
   if(rFields.size() < that->rFields.size()) return false;
   
-  typename std::map<std::string, SchemaPtr>::const_iterator itThis = rFields.begin(), itThat=that->rFields.begin();
+  std::map<std::string, SchemaPtr>::const_iterator itThis = rFields.begin(), itThat=that->rFields.begin();
   for(; itThis!=rFields.end() && itThat!=that->rFields.end(); itThis++, itThat++) {
     if(itThis->first  < itThat->first) return true;
     if(itThis->first  > itThat->first) return false;

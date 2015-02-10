@@ -74,8 +74,8 @@ std::ostream& Tuple::str(std::ostream& out, ConstSchemaPtr schema_arg) const {
   ConstTupleSchemaPtr schema = dynamicPtrCast<const TupleSchema>(schema_arg);
   assert(tFields.size() == schema->tFields.size());
   out << "[Tuple: tFields="<<endl;
-  typename vector<DataPtr>::const_iterator d=tFields.begin();
-  typename vector<SchemaPtr>::const_iterator s=schema->tFields.begin();
+  std::vector<DataPtr>::const_iterator d=tFields.begin();
+  std::vector<SchemaPtr>::const_iterator s=schema->tFields.begin();
   unsigned int i=0;
   for(; d!=tFields.end(); ++d, ++s, ++i) {
     out << "    "<<i<<": "; (*d)->str(out, *s); cout<<endl;
@@ -166,8 +166,8 @@ std::ostream& Record::str(std::ostream& out, ConstSchemaPtr schema_arg) const {
   ConstRecordSchemaPtr schema = dynamicPtrCast<const RecordSchema>(schema_arg);
 
   out << "[Record: rFields="<<endl;
-  typename vector<DataPtr>::const_iterator d=rFields.begin();
-  typename map<string, SchemaPtr>::const_iterator s=schema->rFields.begin();
+  std::vector<DataPtr>::const_iterator d=rFields.begin();
+  std::map<string, SchemaPtr>::const_iterator s=schema->rFields.begin();
   for(; d!=rFields.end(); ++d, ++s) {
     cout << "    "<<s->first<<": "; (*d)->str(cout, s->second); cout<<endl;
   }
@@ -188,7 +188,7 @@ ExplicitKeyValMap::ExplicitKeyValMap(const DataPtr& key, const DataPtr& value) {
 // one (true) or is a fresh mapping (false).
 bool ExplicitKeyValMap::add(DataPtr key, const std::list<DataPtr> value) 
 { 
-  typename map<DataPtr, list<DataPtr> >::iterator i=data.find(key);
+    std::map<DataPtr, list<DataPtr> >::iterator i=data.find(key);
   data.insert(make_pair(key, value));
   return i!=data.end();
 }
@@ -208,7 +208,7 @@ bool ExplicitKeyValMap::operator==(const DataPtr& that_arg) const {
 
   if(data.size() != that->data.size()) return false;
     
-  typename map<DataPtr, list<DataPtr> >::const_iterator thisKeyIt = data.begin(),
+  std::map<DataPtr, list<DataPtr> >::const_iterator thisKeyIt = data.begin(),
                                                         thatKeyIt = that->data.begin();
   for(; thisKeyIt!=data.end(); ++thisKeyIt, ++thatKeyIt) {
     if(thisKeyIt->second.size() != thatKeyIt->second.size()) return false;
@@ -232,7 +232,7 @@ bool ExplicitKeyValMap::operator<(const DataPtr& that_arg) const {
   if(data.size() < that->data.size()) return true;
   if(data.size() > that->data.size()) return false;
     
-  typename map<DataPtr, list<DataPtr> >::const_iterator thisKeyIt = data.begin(),
+  std::map<DataPtr, list<DataPtr> >::const_iterator thisKeyIt = data.begin(),
                                                         thatKeyIt = that->data.begin();
   for(; thisKeyIt!=data.end(); ++thisKeyIt, ++thatKeyIt) {
     if(thisKeyIt->second.size() < thatKeyIt->second.size()) return true;
@@ -262,7 +262,7 @@ void ExplicitKeyValMap::getName(std::list<std::string>& name) const {
 
 // Iterate over the key->value pairs internal to a compound object
 void ExplicitKeyValMap::map(mapFunc& mapper) const {
-  for(typename map<DataPtr, list<DataPtr> >::const_iterator i=data.begin(); i!=data.end(); i++) {
+  for(std::map<DataPtr, list<DataPtr> >::const_iterator i=data.begin(); i!=data.end(); i++) {
     for(list<DataPtr>::const_iterator j=i->second.begin(); j!=i->second.end(); j++) {
       mapper.map(i->first, *j);
     }
@@ -310,7 +310,7 @@ void ExplicitKeyValMap::alignMap(commonMapFunc & mapper,
   ExplicitKeyValMapPtr first = dynamicPtrCast<ExplicitKeyValMap>(*kvMaps.begin());
   /*cout << "    first="; first->str(cout, mapSchema); cout << endl;
   cout << "    ----"<<endl;*/
-  for(typename map<DataPtr, list<DataPtr> >::const_iterator key=first->data.begin(); key!=first->data.end(); ++key) {
+  for(std::map<DataPtr, list<DataPtr> >::const_iterator key=first->data.begin(); key!=first->data.end(); ++key) {
     //cout << "    key="; key->first->str(cout, mapSchema->key); cout << endl;
     // Iterate over all the ither maps in kvMaps to see if they also contain the current key.
     // During the iteration put together vectors of the begin and end iterators to the corresponding value lists.
@@ -330,7 +330,7 @@ void ExplicitKeyValMap::alignMap(commonMapFunc & mapper,
       if(!cur) { cerr << "ExplicitKeyValMap::alignMap() ERROR: applying method to incompatible Data objects!"<<endl; assert(0); }
         
       // If the current key in data doesn't exist in the current ExplicitKeyValMap in kvMaps, break out
-      typename map<DataPtr, std::list<DataPtr> >::const_iterator keyIt = cur->data.find(key->first);
+      std::map<DataPtr, std::list<DataPtr> >::const_iterator keyIt = cur->data.find(key->first);
       if(keyIt == cur->data.end()) {
         keyIsCommon = false;
         break;
@@ -358,8 +358,8 @@ void ExplicitKeyValMap::aggregate(KeyValMapPtr that_arg) {
   if(!that) { cerr << "ExplicitKeyValMap::aggregate() ERROR: applying method to incompatible Data objects!"<<endl; assert(0); }
 
   // Iterate over each key in that
-  for(typename map<DataPtr, list<DataPtr> >::const_iterator iThat=that->data.begin(); iThat!=that->data.end(); iThat++) {
-    typename map<DataPtr, list<DataPtr> >::iterator iThis = data.find(iThat->first);
+  for(std::map<DataPtr, list<DataPtr> >::const_iterator iThat=that->data.begin(); iThat!=that->data.end(); iThat++) {
+      std::map<DataPtr, list<DataPtr> >::iterator iThis = data.find(iThat->first);
     // If this key does not exist in this, add its values 
     // directly to data
     if(iThis == data.end()) {
@@ -379,7 +379,7 @@ std::ostream& ExplicitKeyValMap::str(std::ostream& out, ConstSchemaPtr schema_ar
   ConstExplicitKeyValSchemaPtr schema = dynamicPtrCast<const ExplicitKeyValSchema>(schema_arg);
 
   out << "[ExplicitKeyValMap: "<<endl;
-  for(typename map<DataPtr, list<DataPtr> >::const_iterator key=data.begin(); key!=data.end(); key++) {
+  for(std::map<DataPtr, list<DataPtr> >::const_iterator key=data.begin(); key!=data.end(); key++) {
     out << "    "; key->first->str(out, schema->key); out<<": "<<endl;
     for(list<DataPtr>::const_iterator value=key->second.begin(); value!=key->second.end(); value++) {
       out << "        "; (*value)->str(out, schema->value); out << endl;

@@ -614,6 +614,8 @@ extern int __thread
 BE_ARG_CNT;
 extern char **BE_ARGS;
 
+using namespace MRN;
+
 MRNetBEOutOperator::MRNetBEOutOperator(properties::iterator props) : AsynchOperator(props.next()) {
     net = Network::CreateNetworkBE(BE_ARG_CNT, BE_ARGS);
     init = false;

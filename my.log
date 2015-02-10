@@ -1,2 +1,0 @@
-g++ -g -g -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -I/media/sf_Appcode/Flow/Flow/flow/mrnet/mrnet/include/mrnet -I/media/sf_Appcode/Flow/Flow/flow/mrnet/mrnet/include -I/media/sf_Appcode/Flow/Flow/flow/mrnet/mrnet/build/x86_64-unknown-linux-gnu/ -I/media/sf_Appcode/Flow/Flow/flow/mrnet/mrnet/include/xplat -I/media/sf_Appcode/Flow/Flow/flow/mrnet/mrnet/xplat/include -I/mrnet -Dos_linux -I/usr/include mrnet_operator.C -c -o mrnet_operator.o
-Makefile:47: recipe for target 'mrnet_operator.o' failed

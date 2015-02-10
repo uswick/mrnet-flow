@@ -215,7 +215,7 @@ public:
 
 class MRNetBEOutOperator : public AsynchOperator {
 private:
-    MRN::Stream *stream = NULL;
+    MRN::Stream *stream ;
     MRN::Network *net ;
     bool init;
 public:
