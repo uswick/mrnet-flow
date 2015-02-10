@@ -521,14 +521,23 @@ LoadTimeRegistry LoadTimeRegInstance("BASE", LoadTimeRegistry::init);
  *********************************/
 
 // Map the names of tags to the functions to be called when these tags are entered/exited
-template<typename objType>
-std::map<std::string, typename TagFileReaderRegistry<objType>::enterFunc>* TagFileReaderRegistry<objType>::enterHandlers;
-template<typename objType>
-std::map<std::string, typename TagFileReaderRegistry<objType>::exitFunc>*  TagFileReaderRegistry<objType>::exitHandlers;
+//template<typename objType>
+//std::map<std::string, typename TagFileReaderRegistry<objType>::enterFunc>* TagFileReaderRegistry<objType>::enterHandlers;
+//template<typename objType>
+//std::map<std::string, typename TagFileReaderRegistry<objType>::exitFunc>*  TagFileReaderRegistry<objType>::exitHandlers;
 
 // The stack of pointers to objects that encode the tags that are currently entered but not exited
+//template<typename objType>
+//std::map<std::string, std::list<objType*> > TagFileReaderRegistry<objType>::stack;
+
 template<typename objType>
-std::map<std::string, std::list<objType*> > TagFileReaderRegistry<objType>::stack;
+boost::thread_specific_ptr< std::map<std::string, std::list<objType*> > > TagFileReaderRegistry<objType>::stackInstance;
+
+template<typename objType>
+boost::thread_specific_ptr< std::map<std::string, typename TagFileReaderRegistry<objType>::enterFunc> > TagFileReaderRegistry<objType>::enterHandlersInstance;
+template<typename objType>
+boost::thread_specific_ptr< std::map<std::string, typename TagFileReaderRegistry<objType>::exitFunc> > TagFileReaderRegistry<objType>::exitHandlersInstance;
+
 
 template<typename objType>
 TagFileReaderRegistry<objType>::TagFileReaderRegistry(std::string name): 
@@ -537,8 +546,8 @@ TagFileReaderRegistry<objType>::TagFileReaderRegistry(std::string name):
 
 template<typename objType>
 void TagFileReaderRegistry<objType>::init() {
-  enterHandlers = new std::map<std::string, enterFunc>();
-  exitHandlers  = new std::map<std::string, exitFunc>();
+//  enterHandlers = new std::map<std::string, enterFunc>();
+//  exitHandlers  = new std::map<std::string, exitFunc>();
 }
 
 // Call the entry handler of the most recently-entered object with name objName
@@ -548,9 +557,15 @@ void TagFileReaderRegistry<objType>::enter(string objName, properties::iterator 
   #ifdef VERBOSE
   cout << "<<<"<<stack[objName].size()<<": "<<objName<<endl;
   #endif
-  if(enterHandlers->find(objName) == enterHandlers->end()) { cerr << "ERROR: no entry handler for \""<<objName<<"\" tags!" << endl; }
-  assert(enterHandlers->find(objName) != enterHandlers->end());
-  stack[objName].push_back((*enterHandlers)[objName](iter));
+//  if(enterHandlers->find(objName) == enterHandlers->end()) { cerr << "ERROR: no entry handler for \""<<objName<<"\" tags!" << endl; }
+//  assert(enterHandlers->find(objName) != enterHandlers->end());
+
+  if(getEnterHandlers()->find(objName) == getEnterHandlers()->end()) { cerr << "ERROR: no entry handler for \""<<objName<<"\" tags!" << endl; }
+  assert(getEnterHandlers()->find(objName) != getEnterHandlers()->end());
+
+//  stack[objName].push_back((*enterHandlers)[objName](iter));
+//  (*TagFileReaderRegistry::getStackInstance())[objName].push_back((*enterHandlers)[objName](iter));
+  (*TagFileReaderRegistry::getStackInstance())[objName].push_back((*getEnterHandlers())[objName](iter));
 }
 
 // Call the exit handler of the most recently-entered object with name objName
@@ -560,18 +575,32 @@ void TagFileReaderRegistry<objType>::exit(string objName) {
   #ifdef VERBOSE
   cout << ">>>"<<stack[objName].size()<<": "<<objName<<endl;
   #endif
-  assert(stack[objName].size()>0);
-  if(exitHandlers->find(objName) == exitHandlers->end()) { cerr << "ERROR: no exit handler for \""<<objName<<"\" tags!" << endl; }
-  assert(exitHandlers->find(objName) != exitHandlers->end());
-  (*exitHandlers)[objName](stack[objName].back());
-  stack[objName].pop_back();
+
+//assert(stack[objName].size()>0);
+  assert((*TagFileReaderRegistry::getStackInstance())[objName].size()>0);
+
+//  if(exitHandlers->find(objName) == exitHandlers->end()) { cerr << "ERROR: no exit handler for \""<<objName<<"\" tags!" << endl; }
+//  assert(exitHandlers->find(objName) != exitHandlers->end());
+
+  if(getExitHandlers()->find(objName) == getExitHandlers()->end()) { cerr << "ERROR: no exit handler for \""<<objName<<"\" tags!" << endl; }
+  assert(getExitHandlers()->find(objName) != getExitHandlers()->end());
+
+//  (*exitHandlers)[objName](stack[objName].back());
+//  stack[objName].pop_back();
+
+//  (*exitHandlers)[objName]((*TagFileReaderRegistry::getStackInstance())[objName].back());
+  (*getExitHandlers())[objName]((*TagFileReaderRegistry::getStackInstance())[objName].back());
+  (*TagFileReaderRegistry::getStackInstance())[objName].pop_back();
 }
 
 template<typename objType>
 std::string TagFileReaderRegistry<objType>::str() {
   ostringstream s;
   s << "confHandlers:\n";
-  for(typename map<string, enterFunc>::const_iterator i=enterHandlers->begin(); i!=enterHandlers->end(); i++)
+//  for(typename map<string, enterFunc>::const_iterator i=enterHandlers->begin(); i!=enterHandlers->end(); i++)
+//    s << i->first << endl;
+
+  for(typename map<string, enterFunc>::const_iterator i=getEnterHandlers()->begin(); i!=getEnterHandlers()->end(); i++)
     s << i->first << endl;
   return s.str();
 }

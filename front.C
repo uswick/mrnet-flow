@@ -7,8 +7,8 @@
 
 using namespace std;
 
-int BE_ARG_CNT = 0 ;
-char** BE_ARGS = NULL ;
+int __thread BE_ARG_CNT = 0 ;
+char**  BE_ARGS = NULL ;
 
 // Registers deserializers for all the standard Schemas and Operators
 static void registerDeserializersFront() {
@@ -42,7 +42,7 @@ static void printDataFile(const char* fName, SchemaPtr schema) {
 }
 
 // Test of Record and RecordSchema serialization/deserialization
-SchemaPtr getSchemaFrontNode() {
+SchemaPtr getSchemaCommon() {
     // The data in this file will be an ExplicitKeyValSchema
 
     // The key is a scalar integer
@@ -64,6 +64,21 @@ SchemaPtr getSchemaFrontNode() {
     ExplicitKeyValSchemaPtr keyvalSchema = makePtr<ExplicitKeyValSchema>(keySchema, recSchema);
 
     return keyvalSchema;
+}
+
+SchemaPtr getAggregate_Schema(int numStreams){
+    KeyValSchemaPtr keyValSchema = dynamicPtrCast<KeyValSchema>(getSchemaCommon());
+
+    // Generate the schema for tuples of values from the streams
+    TupleSchemaPtr valTupleSchema = makePtr<TupleSchema>();
+    for(int i = 0 ; i < numStreams  ; ++i) {
+        valTupleSchema->add(keyValSchema->getValue());
+    }
+
+    // Generate the schema for the output of this operator
+    ExplicitKeyValSchemaPtr outputKeyValSchema = makePtr<ExplicitKeyValSchema>(keyValSchema->getKey(), valTupleSchema);
+
+    return outputKeyValSchema;
 }
 
 class Op2OpEdge {
@@ -292,7 +307,7 @@ int main(int argc, char** argv) {
     registerDeserializersFront();
 
     // The flows we'll run get their input data from a file, so initialize the file to hold some data
-    SchemaPtr fileSchema = getSchemaFrontNode();
+    SchemaPtr fileSchema = getAggregate_Schema(numStreams);
 
     // Create a Flow and write it out to a configuration file.
     createSource2SinkFlowFront(opConfigFName, "sink", "top_file", "backend", "filter.so", fileSchema);

@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/thread/tss.hpp>
 
 using namespace sight;
 
@@ -40,7 +41,7 @@ typedef SharedPtr<SchemaConfig> SchemaConfigPtr;
 class StreamBuffer {
     public:
     //holding buffer for the incoming/outgoing stream
-    const void* buffer;
+    const char* buffer;
     //total size of current stream
     int current_total_size;
     //current maximum size allowed on the stream
@@ -51,7 +52,7 @@ class StreamBuffer {
     //start position of the sttream
     int start ;
 
-    StreamBuffer(const void* out, int max_size){
+    StreamBuffer(const char* out, int max_size){
         this->buffer = out ;
         //init sizes
         this->max_size = max_size;
@@ -62,7 +63,7 @@ class StreamBuffer {
     }
 
     ~StreamBuffer(){
-        delete (char*)buffer;
+//        delete (char*)buffer;
     }
 
 } ;
@@ -134,9 +135,17 @@ class Schema {
 class SchemaRegistry {
   public:
   typedef SchemaPtr (*creator)(properties::iterator props);
-  static std::map<std::string, creator> creators;
-  
-  // Maps the given label to a creator function, returning whether this mapping overrides a prior one (true) or is
+//  static std::map<std::string, creator> creators;
+
+  static boost::thread_specific_ptr< std::map<std::string, creator> > creatorsInstance;
+
+  static boost::thread_specific_ptr< std::map<std::string, creator> >& getCreators(){
+        if(!creatorsInstance.get()){
+            creatorsInstance.reset(new std::map<std::string, creator>());
+        }
+        return creatorsInstance;
+  }
+    // Maps the given label to a creator function, returning whether this mapping overrides a prior one (true) or is
   // a fresh mapping (false).	
   static bool regCreator(const std::string& label, creator create);
   

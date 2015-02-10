@@ -1,6 +1,9 @@
 #include "operator.h"
+#include "mrnet_flow.h"
 #include <limits.h>
 #include <stdio.h>
+#include <unistd.h>
+
 using namespace std;
 
 /******************
@@ -26,6 +29,12 @@ void Stream::transfer(DataPtr obj) {
 // Called by the stream's source operator to indicate that no more data will be sent on this stream
 void Stream::streamFinished() {
   targetOp->streamFinished(opInPort);
+}
+
+void Stream::setSchema(SchemaPtr alt_schema){
+//    schema = dynamicPtrCast<SchemaPtr>(alt_schema);
+    printf("schema  shared_ptr->px : %p \n", schema.get() );
+    schema = alt_schema;
 }
 
 // Return whether this object is identical to that object
@@ -140,19 +149,25 @@ StreamConfig::StreamConfig(unsigned int fromOpID, unsigned int fromOpPort, unsig
  ***** OperatorRegistry *****
  ****************************/
 
-std::map<std::string, OperatorRegistry::creator> OperatorRegistry::creators;
+//std::map<std::string, OperatorRegistry::creator> OperatorRegistry::creators;
+
+boost::thread_specific_ptr< std::map<std::string, OperatorRegistry::creator> > OperatorRegistry::creatorsInstance;
 
 // Maps the given label to a creator function, returning whether this mapping overrides a prior one (true) or is
 // a fresh mapping (false).	
 bool OperatorRegistry::regCreator(const std::string& label, OperatorRegistry::creator create) {
-  std::map<std::string, creator>::iterator i=creators.find(label);
-  creators.insert(make_pair(label, create));
-  return i!=creators.end();
+//  std::map<std::string, creator>::iterator i=creators.find(label);
+//  creators.insert(make_pair(label, create));
+//  return i!=creators.end();
+
+  std::map<std::string, creator>::iterator i=(*getCreators()).find(label);
+  (*getCreators()).insert(make_pair(label, create));
+  return i!=(*getCreators()).end();
 }
 
 OperatorPtr OperatorRegistry::create(propertiesPtr props) {
-	if(creators.find(props->name()) == creators.end()) { cerr << "ERROR: no deserializer available for "<<props->name()<<"!"<<endl; assert(0); }
-  return creators[props->name()](props->begin());
+	if((*getCreators()).find(props->name()) == (*getCreators()).end()) { cerr << "ERROR: no deserializer available for "<<props->name()<<"!"<<endl; assert(0); }
+  return (*getCreators())[props->name()](props->begin());
 }
 
 /*************************
@@ -175,6 +190,10 @@ void SynchOperator::init() {
   maxNumDataFromInStream=0;
   //minNumDataFromInStream=INT_MAX;
   numStreamsWithData=0;
+
+  for (int i = 0; i < numInputs; i++) {
+        unFinishedStreams.push_back((unsigned int) i);
+  }
 }
 
 // Called by an incoming Stream to communicate the given Data object
@@ -241,7 +260,21 @@ void SynchOperator::recv(unsigned int inStreamIdx, DataPtr obj) {
 void SynchOperator::streamFinished(unsigned int inStreamIdx) { 
   // This operator stops when any of the incoming streams stop since the work() function 
   // is only called when there's data on all the incoming streams.
-  if(!finishedOperator) {
+
+  //check if how many streams has finished in sync
+  for(vector<unsigned int>::iterator it = unFinishedStreams.begin(); it != unFinishedStreams.end() ;){
+      if(*it == inStreamIdx){
+          //remove this from list - this stream is done
+          #ifdef VERBOSE
+          printf("[SyncOperator]: stream finished via inStreamIdx : %u PID : %d \n", *it, getpid());
+          #endif
+          it = unFinishedStreams.erase(it);
+      }else {
+          it++;
+      }
+  }
+
+  if(!finishedOperator && unFinishedStreams.size() == 0) {
     inStreamsFinished();
     finishedOperator = true; 
   }
@@ -370,23 +403,24 @@ void InFileOperator::work() {
     // Read the next Data object on from inFile
     DataPtr data = schema->deserialize(inFile);
 
-      //todo remove
+#ifdef VERBOSE
     char *tmp_buffer = (char *) malloc(10000);
     StreamBuffer bufferStream(tmp_buffer, 10000);
     schema->serialize(data, &bufferStream);
 
-    printf("InfileOp:BE trying to print data object:\n");
+    printf("[InputFile]: input data stream text\n");
     int j = 0 ;
       for( j = 0 ; j < bufferStream.current_total_size ; j++){
           printf("%c",tmp_buffer[j]);
       }
-    printf("\n=========================================== \n\n\n");
+    printf("\n[InputFile]:=========================================== \n\n\n");
+    delete tmp_buffer;
+#endif
 
     outStreams[0]->transfer(data);
     fgetc(inFile);
   }
-  
-  // The file has completed, inform the outgoing stream
+    // The file has completed, inform the outgoing stream
   outStreams[0]->streamFinished();
 }
 
@@ -475,10 +509,15 @@ std::vector<SchemaPtr> OutFileOperator::inConnectionsComplete() {
 // inData: holds the single Data object from the single stream
 // This function may send Data objects on some of the outgoing streams.
 void OutFileOperator::work(unsigned int inStreamIdx, DataPtr inData) {
-  assert(inStreamIdx==0);
+    #ifdef VERBOSE
+    printf("[OUT File]: operator.... inStreamId : %d \n", inStreamIdx);
+    #endif
+    assert(inStreamIdx==0);
   
   //cout << "OutFileOperator::work("<<inStreamIdx<<", inData="; inData->str(cout, inStreams[0]->getSchema()); cout << endl;
   inStreams[0]->getSchema()->serialize(inData, outFile);
+  fflush(outFile);
+
 }
 
 // Write a human-readable string representation of this Operator to the given output stream
@@ -523,6 +562,12 @@ SynchedKeyValJoinOperator::SynchedKeyValJoinOperator(properties::iterator props)
 OperatorPtr SynchedKeyValJoinOperator::create(properties::iterator props) {
   assert(props.name()=="SynchedKeyValJoin");
   return makePtr<SynchedKeyValJoinOperator>(props);  
+}
+
+void SynchedKeyValJoinOperator::inStreamsFinished() {
+    if(outStreams.size() > 0){
+        outStreams[0]->streamFinished();
+    }
 }
 
 SynchedKeyValJoinOperator::~SynchedKeyValJoinOperator() {}

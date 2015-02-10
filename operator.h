@@ -7,6 +7,7 @@
 #include "schema.h"
 #include "data.h"
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/thread/tss.hpp>
 
 class Operator;
 typedef SharedPtr<Operator> OperatorPtr;
@@ -50,6 +51,9 @@ class Stream {
 
   // Called by the stream's source operator to indicate that no more data will be sent on this stream
   void streamFinished();
+
+  //assign a schema dynamically
+  void setSchema(SchemaPtr alt_schema);
   
   // Returns this Stream's Schema
   SchemaPtr getSchema() const { return schema; }
@@ -190,8 +194,16 @@ class StreamConfig {
 class OperatorRegistry {
   public:
   typedef OperatorPtr (*creator)(properties::iterator props);
-  static std::map<std::string, creator> creators;
-  
+//  static std::map<std::string, creator> creators;
+
+  static boost::thread_specific_ptr< std::map<std::string, creator> > creatorsInstance;
+
+  static boost::thread_specific_ptr< std::map<std::string, creator> >& getCreators(){
+      if(!creatorsInstance.get()){
+          creatorsInstance.reset(new std::map<std::string, creator>());
+      }
+      return creatorsInstance;
+  }
   // Maps the given label to a creator function, returning whether this mapping overrides a prior one (true) or is
   // a fresh mapping (false).	
   static bool regCreator(const std::string& label, creator create);
@@ -237,6 +249,9 @@ class SynchOperator: public Operator {
   
   // Records the number of streams on which at least one Data object has arrived
   unsigned int numStreamsWithData;
+
+  //list indicating
+  vector<unsigned int> unFinishedStreams;
   
   public:
   // Called by an incoming Stream to communicate the given Data object
@@ -421,6 +436,8 @@ class SynchedKeyValJoinOperator : public SynchOperator {
   
   // Creates an instance of the Operator from its serialized representation
   static OperatorPtr create(properties::iterator props);
+
+  virtual void inStreamsFinished();
   
   ~SynchedKeyValJoinOperator();
   
@@ -510,14 +527,14 @@ class ScatterOperatorConfig: public OperatorConfig {
 /*
 	- Operators:
 		? Input is a fixed number of streams of data items
-			§ Synchronous: item must arrive on all incoming streams before operation is called
-			§ Asynchronous: operation is called when one or more items arrive, the number of available items is up to the system
+			ï¿½ Synchronous: item must arrive on all incoming streams before operation is called
+			ï¿½ Asynchronous: operation is called when one or more items arrive, the number of available items is up to the system
 		? Output is a single stream of data items
-			§ Operators are not required to emit data on streams and may instead keep a local cache of data before emitting something
+			ï¿½ Operators are not required to emit data on streams and may instead keep a local cache of data before emitting something
 		? Each input/output data item is an instance of CtxtObsMap and may cover any number of context->observations and may be lossy or lossless
 		? 
 		? API
-			§ class Operator {
+			ï¿½ class Operator {
 			  typef enum {synch, asynch} synchType;
 			  synchType synchrony;
 			  SchemaPtr schema;
@@ -529,7 +546,7 @@ class ScatterOperatorConfig: public OperatorConfig {
 			  virtual void process(std::vector<std::list<const CtxtObsMap&> > inStreams)=0;
 			  void emit(const CtxtObsMap& data);
 };
-			§ class JoinOp: public Operator {
+			ï¿½ class JoinOp: public Operator {
 			  // All the context->observation pairs ever observed on each incoming stream
 			  std::vector<ExplicitCtxtObsMapPtr> history;
 			  
@@ -569,51 +586,51 @@ class ScatterOperatorConfig: public OperatorConfig {
 			      }
 			    }
 			  }
-			§ // Join that looks for keys that are similar within a given threshold
+			ï¿½ // Join that looks for keys that are similar within a given threshold
 			class JoinSimilarOp: public Operator {
 			};
-			§ // Given multiple streams with the same schema this operator produces a unified stream that contains
+			ï¿½ // Given multiple streams with the same schema this operator produces a unified stream that contains
 			// context->observation pairs from all the streams
 			class Aggregate: public Operator {
 			
 			};
-			§ // Emit all incoming context->observation pair for which a given condition holds
+			ï¿½ // Emit all incoming context->observation pair for which a given condition holds
 			class Select: public Operator {
 			
 			};
-			§ // Adds new dimension to context or observation that is a function of existing contexts or 
+			ï¿½ // Adds new dimension to context or observation that is a function of existing contexts or 
 			// observations and emits the resulting richer tuples
 			class AddDerivedData: public Operator {
 			
 			};
-			§ // Removes a given dimension of context or observation from the incoming events and emits the 
+			ï¿½ // Removes a given dimension of context or observation from the incoming events and emits the 
 			// resulting stripped tuples
 			class RemoveData: public Operator {
 			};
-			§ // Given incoming events where the one of the observation dimensions is a CtxtObsMap, moves its
+			ï¿½ // Given incoming events where the one of the observation dimensions is a CtxtObsMap, moves its
 			// context to the event's context and moves its observations to the event's observation
 			class Flatten: public Operator {
 			
 			};
-			§ // Takes selected dimensions of the incoming events' context and observations and emits events 
+			ï¿½ // Takes selected dimensions of the incoming events' context and observations and emits events 
 // where these dimensions are replaced with an observation CtxtObsMap that contains the removed 
 // context and observation dimensions
 			class Deepen: public Operator {
 			
 			};
-			§ // Applies a given function to the incoming events and emit the event produced by the function
+			ï¿½ // Applies a given function to the incoming events and emit the event produced by the function
 			// Functions can:
 			// - Emit events each time they're applied and/or
 			// - Accumulate some metric and emit it periodically
 class Map: public Operator {
 			
 			};
-			§ // Perform Lossless compression on the incoming events in using a data-agnostic (uses equality and 
+			ï¿½ // Perform Lossless compression on the incoming events in using a data-agnostic (uses equality and 
 // inequality info) or data-sensitive (uses additional info) manner.
 			class LosslessCompress: public Operator {
 			
 			};
-			§ // Perform Lossy compression on the incoming events in using a data-agnostic (uses equality and 
+			ï¿½ // Perform Lossy compression on the incoming events in using a data-agnostic (uses equality and 
 // inequality info) or data-sensitive (uses additional info) manner.
 			class LossyCompress: public Operator {
 			

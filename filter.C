@@ -17,8 +17,8 @@
 
 using namespace MRN ;
 
-int BE_ARG_CNT = 0 ;
-char** BE_ARGS = NULL ;
+int __thread BE_ARG_CNT = 0 ;
+char**  BE_ARGS = NULL ;
 /**
 * each filter initialize a Flow
 * minimally each flow has a
@@ -33,11 +33,6 @@ extern "C" {
 * Let filter accept characters arrays
 * */
 const char *defaultFlowFilter_format_string = "%ac";
-
-typedef struct {
-    SharedPtr<SourceOperator> op;
-    SharedPtr<MRNetFilterOutOperator> sink;
-} glst_t;
 
 
 glst_t *initAndGetGlobal(void **, MRNetInfo& minfo);
@@ -55,7 +50,9 @@ void defaultFlowFilter(std::vector< PacketPtr > &packets_in,
         PacketPtr & /* params */,
         const TopologyLocalInfo &inf) {
 
-    printf("starting mrnet filter.... PID : %d !! \n", getpid());
+    #ifdef VERBOSE
+    printf("[MRNET filter]: Start of epoch PID : %d thread ID : %lu  \n", getpid(), pthread_self());
+    #endif
 
     Network *net = const_cast< Network * >( inf.get_Network() );
     PacketPtr first_packet = packets_in[0];
@@ -94,6 +91,11 @@ void defaultFlowFilter(std::vector< PacketPtr > &packets_in,
 
     //exectue workflow
     state->op->work();
+
+#ifdef VERBOSE
+    printf("[MRNET filter]: End of epoch output num of packets = %lu PID : %d thread ID : %lu  \n",packets_out.size()
+    ,getpid(), pthread_self());
+#endif
 }
 
 /**
@@ -102,13 +104,16 @@ void defaultFlowFilter(std::vector< PacketPtr > &packets_in,
 */
 glst_t *initAndGetGlobal(void **state_data, MRNetInfo& minfo) {
     glst_t *global_state;
-    if (*state_data == NULL && !filter_initialized) {
-        filter_initialized = true ;
+    if (*state_data == NULL) {
+//        filter_initialized = true ;
         global_state = new glst_t;
-        SharedPtr<SourceOperator> source = filter_flow_init();
+        glst_t filter_inf = filter_flow_init();
+//        SharedPtr<SourceOperator> source = filter_flow_init();
+        SharedPtr<SourceOperator> source =  filter_inf.op;
         global_state->op = source;
 
-        global_state->sink = getOutOperator();
+//        global_state->sink = getOutOperator();
+        global_state->sink =  filter_inf.sink;
         //source - mrnet filter source
 
         *state_data = global_state;

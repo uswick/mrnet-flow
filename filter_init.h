@@ -6,8 +6,10 @@
 
 using namespace std;
 
-SharedPtr<SourceOperator>& filter_flow_init();
+typedef struct {
+    SharedPtr<SourceOperator> op;
+    SharedPtr<MRNetFilterOutOperator> sink;
+    map<unsigned int, SchemaPtr> out_schemas;
+} glst_t;
 
-map<unsigned int, SchemaPtr>& getOutputSchemas();
-
-SharedPtr<MRNetFilterOutOperator>& getOutOperator();
+glst_t filter_flow_init();

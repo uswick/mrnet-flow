@@ -1,7 +1,8 @@
+#include <unistd.h>
 #include "filter_init.h"
 #include "mrnet_operator.h"
 
-SharedPtr<SourceOperator> source_op;
+//SharedPtr<SourceOperator> source_op;
 SharedPtr<MRNetFilterOutOperator> out_op_filter;
 map<unsigned int, SchemaPtr> output_schemas;
 
@@ -15,6 +16,7 @@ static void registerDeserializersFilter() {
 
     // Operators
     OperatorRegistry::regCreator("MRNetFilterOut", &MRNetFilterOutOperator::create);
+    OperatorRegistry::regCreator("SynchedKeyValJoin", &SynchedKeyValJoinOperator::create);
     OperatorRegistry::regCreator("MRNetFilterSource", &MRNetFilterSourceOperator::create);
 }
 
@@ -64,7 +66,7 @@ public:
 // Given a parser that reads a given configuration file, load it and run it.
 // Returns a mapping of the IDs of sink operators (special types that produce externally-visible
 // artifacts like files or sockets) to the schemas of their outputs.
-SharedPtr<SourceOperator>& getFlowSource(structureParser& parser) {
+SharedPtr<SourceOperator> getFlowSource(structureParser& parser, glst_t& filter_info) {
     // Maps Operator unique IDs to pointers to the Operators themselves
     map<unsigned int, OperatorPtr> operators;
 
@@ -157,6 +159,7 @@ SharedPtr<SourceOperator>& getFlowSource(structureParser& parser) {
             op->inConnectionsComplete();
 
         vector<SchemaPtr> outStreamSchemas = op->inConnectionsComplete();
+//        printf("OP ID : %d num outputs : %d out schemas : %d \n",op->getID(), op->getNumOutputs(), outStreamSchemas.size());
         assert(op->getNumOutputs() == outStreamSchemas.size());
         if(op->getNumOutputs()>0) {
             map<unsigned int, list<Op2OpEdge> >::iterator out=outEdges.find(opID);
@@ -183,15 +186,19 @@ SharedPtr<SourceOperator>& getFlowSource(structureParser& parser) {
     if(sourceOps.size()>1) { cerr << "ERROR: multiple source operators not supported in sequential implementation!"<<endl; assert(0); }
     assert(operators.find(*sourceOps.begin()) != operators.end());
 
-    source_op = dynamicPtrCast<SourceOperator>(operators[*sourceOps.begin()]);
+    SharedPtr<SourceOperator> source_op = dynamicPtrCast<SourceOperator>(operators[*sourceOps.begin()]);
+    filter_info.op = source_op;
+//    source_op = dynamicPtrCast<SourceOperator>(operators[*sourceOps.begin()]);
     if(!source_op) { cerr << "ERROR: source operator does not derive from SourceOperator! operator="; operators[*sourceOps.begin()]->str(cerr); cerr<<endl; assert(0); }
 
     //get output schema for  debugging
     for(set<unsigned int>::iterator op=sinkOps.begin(); op!=sinkOps.end(); ++op) {
-        out_op_filter = dynamicPtrCast<MRNetFilterOutOperator>(operators[*op]);
-        if(out_op_filter) {
-            assert(out_op_filter->getInStreams().size()==1);
-            output_schemas[*op] = (*out_op_filter->getInStreams().begin())->getSchema();
+//        out_op_filter = dynamicPtrCast<MRNetFilterOutOperator>(operators[*op]);
+        filter_info.sink = dynamicPtrCast<MRNetFilterOutOperator>(operators[*op]);
+        if(filter_info.sink) {
+            assert(filter_info.sink->getInStreams().size()==1);
+//            output_schemas[*op] = (*out_op_filter->getInStreams().begin())->getSchema();
+            filter_info.out_schemas[*op] = (*filter_info.sink->getInStreams().begin())->getSchema();
         }
     }
 
@@ -239,8 +246,59 @@ void createFilterSource2OutFlow(const char* outFName, SchemaPtr schema) {
     }
 }
 
+void createFilterSource2Join2OutFlow(const char* outFName, SchemaPtr schema, unsigned int numStreams) {
+    ofstream out(outFName);
 
-SharedPtr<SourceOperator>& filter_flow_init(){
+    // MRNet filter source -> sink
+
+    {
+        unsigned int opID=0;
+        properties operators("Operators");
+        out << operators.enterStr();
+
+        MRNetFilterSourceOperatorConfig source(opID, numStreams, schema->getConfig());
+        out << source.props->tagStr();
+        ++opID;
+
+        SynchedKeyValJoinOperatorConfig join(/*numInputs*/ numStreams, opID);
+        out << join.props->tagStr();
+        ++opID;
+
+        MRNetFilterOutOperatorConfig sink(opID);
+        out << sink.props->tagStr();
+
+        out << operators.exitStr();
+    }
+
+    {
+        unsigned int opID=0;
+        properties streams("Streams");
+        out << streams.enterStr();
+
+        //create streams to join source with gather operator
+        int s=0;
+        for(s=0; s<numStreams; ++s) {
+            /* // scatter:out:s --> sink_s:in:0
+            StreamConfig scatter2sink(opID, s, opID+1+s, 0);
+            out << scatter2sink.props.tagStr(); */
+            // scatter:out:s --> join:in:s
+            StreamConfig source2join(opID, s, opID+1, s);
+            out << source2join.props.tagStr();
+        }
+        //opID+=numStreams;
+        ++opID;
+
+        // join:out:0 --> sink:in:0
+        StreamConfig join2sink(opID, 0, opID+1, 0);
+        out << join2sink.props.tagStr();
+
+        out << streams.exitStr();
+    }
+}
+
+
+
+glst_t filter_flow_init(){
     const char* opConfigFName="opconfig_filter";
 
     // First, register the deserializers for all the Schemas and Operators that may be used
@@ -250,12 +308,16 @@ SharedPtr<SourceOperator>& filter_flow_init(){
     SchemaPtr fileSchema = getInputSchemaFilterNode();
 
     // Create a Flow and write it out to a configuration file.
-    createFilterSource2OutFlow(opConfigFName , fileSchema);
+//    createFilterSource2OutFlow(opConfigFName , fileSchema);
+    createFilterSource2Join2OutFlow(opConfigFName, fileSchema, 3);
 
     FILE* opConfig = fopen(opConfigFName, "r");
     FILEStructureParser parser(opConfig, 10000);
 
-    SharedPtr<SourceOperator> src_op = getFlowSource(parser);
+    glst_t filter_inf ;
+    getFlowSource(parser, filter_inf);
 
-    return src_op;
+    fprintf(stdout, "[Filter]: initialization complete PID : %d thread ID : %lu \n", getpid(), pthread_self());
+
+    return filter_inf;
 }

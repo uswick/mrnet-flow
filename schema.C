@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <vector>
+#include <unistd.h>
+
 using namespace std;
 
 /******************
@@ -143,19 +145,29 @@ int Schema::bufgetc(StreamBuffer * buffer){
  ***** SchemaRegistry *****
  **************************/
 
-std::map<std::string, SchemaRegistry::creator> SchemaRegistry::creators;
+//std::map<std::string, SchemaRegistry::creator> SchemaRegistry::creators;
+
+boost::thread_specific_ptr< std::map<std::string, SchemaRegistry::creator> > SchemaRegistry::creatorsInstance;
 
 // Maps the given label to a creator function, returning whether this mapping overrides a prior one (true) or is
 // a fresh mapping (false).	
 bool SchemaRegistry::regCreator(const std::string& label, SchemaRegistry::creator create) {
-  std::map<std::string, creator>::iterator i=creators.find(label);
-  creators.insert(make_pair(label, create));
-  return i!=creators.end();
+//  std::map<std::string, creator>::iterator i=creators.find(label);
+//  creators.insert(make_pair(label, create));
+//  return i!=creators.end();
+
+  std::map<std::string, creator>::iterator i=(*getCreators()).find(label);
+  (*getCreators()).insert(make_pair(label, create));
+  return i!=(*getCreators()).end();
+
 }
 
 SchemaPtr SchemaRegistry::create(propertiesPtr props) {
-	if(creators.find(props->name()) == creators.end()) { cerr << "ERROR: no deserializer available for "<<props->name()<<"!"<<endl; assert(0); }
-  return creators[props->name()](props->begin());
+//	if(creators.find(props->name()) == creators.end()) { cerr << "ERROR: no deserializer available for "<<props->name()<<"!"<<endl; assert(0); }
+//  return creators[props->name()](props->begin());
+
+    if((*getCreators()).find(props->name()) == (*getCreators()).end()) { cerr << "ERROR: no deserializer available for "<<props->name()<<"!"<<endl; assert(0); }
+    return (*getCreators())[props->name()](props->begin());
 }
 
 /************************
@@ -426,6 +438,8 @@ SchemaPtr RecordSchema::get(const std::string& label) const {
 // vector maintained by RecordData instances of this RecordSchema
 unsigned int RecordSchema::getIdx(const std::string& label) const {
   assert(schemaFinalized);
+
+//  printf("Record Schema : lbl : %s \n", label.c_str());
   /*cout << "#field2Idx="<<field2Idx.size()<<endl;
   for(map<std::string, unsigned int>::const_iterator f=field2Idx.begin(); f!=field2Idx.end(); ++f)
     cout << "    "<<f->first<<": "<<f->second<<endl;*/
@@ -768,7 +782,7 @@ DataPtr ExplicitKeyValSchema::deserialize(FILE* in) const {
 
 
 DataPtr ExplicitKeyValSchema::deserialize(StreamBuffer * in) const {
-    printf("Schema::ExplicitKeyValSchema[deserialize] start ...\n");
+//    printf("Schema::ExplicitKeyValSchema[deserialize] start ... PID : %d\n", getpid());
 
     ExplicitKeyValMapPtr kvMap = makePtr<ExplicitKeyValMap>();
     map<DataPtr, list<DataPtr> >& data = kvMap->getDataMod();
@@ -777,9 +791,10 @@ DataPtr ExplicitKeyValSchema::deserialize(StreamBuffer * in) const {
     // Read the number of keys
     unsigned int numKeys;
 
-    printf("Schema::ExplicitKeyValSchema[deserialize] bufread numkeys...\n");
+//    printf("Schema::ExplicitKeyValSchema[deserialize] bufread numkeys...PID : %d thread ID: %d \n",  getpid(), pthread_self());
     ret = bufread(&numKeys, sizeof(unsigned int), in);
-    printf("Schema::ExplicitKeyValSchema[deserialize] bufread numkeys done.. keys : %d  ret : %d ...\n", numKeys, ret);
+//    printf("Schema::ExplicitKeyValSchema[deserialize] bufread numkeys done.. keys : %d  ret : %d ...PID : %d\n", numKeys, ret,  getpid());
+//    fflush(stdout);
 
     if(ret == -1) return NULLData;
 
@@ -793,6 +808,9 @@ DataPtr ExplicitKeyValSchema::deserialize(StreamBuffer * in) const {
         // Read the number of values mapped to this key
         unsigned int numValues;
         ret = bufread(&numValues, sizeof(unsigned int), in);
+//        printf("Schema::ExplicitKeyValSchema[deserialize] bufread Values : %d return : %d ... PID : %d thread ID: %d  \n", numValues, ret, getpid(), pthread_self());
+//        fflush(stdout);
+
         if(ret == -1) return NULLData;
 
         // Load this number of values and map them to the key

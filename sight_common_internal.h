@@ -11,6 +11,7 @@
 #include <sstream>
 #include <assert.h>
 #include "process.h"
+#include <boost/thread/tss.hpp>
 
 // Include all the definitions that control compilation
 //#include "definitions.h"
@@ -282,8 +283,8 @@ class TagFileReaderRegistry: public LoadTimeRegistry {
   typedef void (*exitFunc)(objType*);
 
   // Map the names of tags to the functions to be called when these tags are entered/exited
-  static std::map<std::string, enterFunc>* enterHandlers;
-  static std::map<std::string, exitFunc>*  exitHandlers;
+//  static std::map<std::string, enterFunc>* enterHandlers;
+//  static std::map<std::string, exitFunc>*  exitHandlers;
 
   TagFileReaderRegistry(std::string name);
   // Called exactly once for each class that derives from LoadTimeRegistry to initialize its static data structures.
@@ -291,9 +292,34 @@ class TagFileReaderRegistry: public LoadTimeRegistry {
 
   protected:
   // The stack of pointers to objects that encode the tags that are currently entered but not exited
-  static std::map<std::string, std::list<objType*> > stack;
+//  static std::map<std::string, std::list<objType*> > stack;
+  static boost::thread_specific_ptr< std::map<std::string, std::list<objType*> > > stackInstance;
 
-  public:
+  static boost::thread_specific_ptr< std::map<std::string, enterFunc> > enterHandlersInstance;
+  static boost::thread_specific_ptr< std::map<std::string, exitFunc> > exitHandlersInstance;
+
+  static boost::thread_specific_ptr< std::map<std::string, std::list<objType*> > >& getStackInstance(){
+    if(!stackInstance.get()){
+        stackInstance.reset(new std::map<std::string, std::list<objType*> >);
+    }
+      return stackInstance;
+  }
+
+  static boost::thread_specific_ptr< std::map<std::string, enterFunc> >& getEnterHandlers(){
+      if(!enterHandlersInstance.get()){
+        enterHandlersInstance.reset(new std::map<std::string, enterFunc>());
+      }
+      return enterHandlersInstance;
+  }
+
+  static boost::thread_specific_ptr< std::map<std::string, exitFunc> >& getExitHandlers(){
+        if(!exitHandlersInstance.get()){
+            exitHandlersInstance.reset(new std::map<std::string, exitFunc>());
+        }
+        return exitHandlersInstance;
+  }
+
+public:
   // Call the entry handler of the most recently-entered object with name objName
   // and push the object it returns onto the stack.
   static void enter(std::string objName, properties::iterator iter);

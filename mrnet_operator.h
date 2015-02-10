@@ -195,6 +195,7 @@ public:
     // This function may send Data objects on some of the outgoing streams.
     virtual void work(unsigned int inStreamIdx, DataPtr inData);
 
+    virtual void inStreamFinished(unsigned int inStreamIdx);
     // Write a human-readable string representation of this Operator to the given output stream
     virtual std::ostream& str(std::ostream& out) const;
 };
@@ -236,6 +237,7 @@ public:
     // This function may send Data objects on some of the outgoing streams.
     void work(unsigned int inStreamIdx, DataPtr inData);
 
+    virtual void inStreamFinished(unsigned int inStreamIdx) ;
     // Write a human-readable string representation of this Operator to the given output stream
     virtual std::ostream& str(std::ostream& out) const;
 };
@@ -262,12 +264,12 @@ private:
     char * so_file ;
     const char * dummy_argv;
     bool init ;
+    int num_backends;
     StreamBuffer * streamBuf;
 
     //MRNet specific
     MRN::Network * net;
     MRN::Stream * active_stream;
-    int num_backends;
     MRN::Communicator *comm_BC;
 
 public:

@@ -383,7 +383,7 @@ void createScatterJoinFlow(const char* outFName, const char* sourceFName, const 
 int main(int argc, char** argv) {
   const char* opConfigFName="opconfig";
   if(argc>1) opConfigFName = argv[1];
-  int flowChoice = 0;
+  int flowChoice = 1;
   if(argc>2) flowChoice = atoi(argv[2]);
 
   unsigned int numStreams=3;
