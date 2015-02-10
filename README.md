@@ -45,13 +45,21 @@ c) once project is built simply execute
 d) A successfull execution shows similar output to following..
 
 `[BE]: initialization complete PID : 22432 thread ID : 139664805431072`
-`[BE]: initialization complete PID : 22433 thread ID : 140198648768288`  
-`[BE]: initialization complete PID : 22431 thread ID : 139848547247904`  
+
+`[BE]: initialization complete PID : 22433 thread ID : 140198648768288`
+
+`[BE]: initialization complete PID : 22431 thread ID : 139848547247904`
+
 `[FE]: initialization complete PID : 22429 thread ID : 139837675480864` 
+
 `[Filter]: initialization complete PID : 22429 thread ID : 139837654247168` 
+
 `[FE]: Recieved EXIT tag from MRNet Stream, moving into final phase..`
+
 `[FE]: Flow data transfer is successfull... !! PID : 22429` 
+
 `Sink data:`
+
 `0: [ExplicitKeyValMap:` 
 `    [Tuple: tFields=`
 `    0: [Scalar: val={0}, type=int]`
