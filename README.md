@@ -10,12 +10,12 @@ Boost 1.54/1.55 (Boost thread/chrono/timer/system)
 
 How to build/run with MRNet->
 ---------------------------------------
-$ make clean mrnop
+`$ make clean mrnop`
 
 
 How to build/run without MRNet->
 ---------------------------------------
-$ make clean dataTest
+`$ make clean dataTest`
 
 
 
@@ -39,7 +39,8 @@ b) modify MRNet topology file to suite your configuration, an
    file ${Flow_Dir}/top_file
            
 c) once buuild to run simply execute
-   $ ./front
+
+   `$ ./front`
 
 
 
