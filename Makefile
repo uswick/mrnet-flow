@@ -1,5 +1,5 @@
-REPO_PATH=/u/uswickra/MRnet/mrnet_4.1.0
-BOOST_INSTALL_DIR=/u/uswickra/boost_1_55/boost_1_55_0/install
+REPO_PATH=/N/u/uswickra/Karst/MRNet/mrnet_4.1.0
+BOOST_INSTALL_DIR=/N/u/uswickra/Karst/boost/boost_1_52_0/install
 
 MRNET_CXXFLAGS = -g -fPIC -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS  \
 				-I${REPO_PATH}/include/mrnet  \
@@ -13,7 +13,7 @@ MRNET_CXXFLAGS = -g -fPIC -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STD
 
 CXX = g++
 #CXX = clang++
-CXXFLAGS = -fPIC
+CXXFLAGS = -fPIC -I${BOOST_INSTALL_DIR}/include
 
 LDFLAGS = -L${BOOST_INSTALL_DIR}/lib -lboost_thread -lboost_system
 
