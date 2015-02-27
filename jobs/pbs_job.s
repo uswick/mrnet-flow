@@ -1,9 +1,23 @@
 #!/bin/bash
-#PBS -l nodes=2:ppn=1
+#PBS -l nodes=5:ppn=1
 #PBS -l walltime=00:30:00
 #PBS -N flow_job
-#PBS -q debug
+##PBS -q debug
 #PBS -V
+
+fanout=4
+
+#You should define FLOW_HOME enviornement variable prior to running this script
+#FLOW_HOME should point to directory where FLOW engine is installed.
+#FLOW_HOME can be inserted to either your local bash profile ~/.bashrc or global
+#profile or in shell itself prior to running qsub/script.
+#
+#if you are using anthing other than MOAB/PBS schduler use respective hostlist 
+#file environement variable (ie:- replace var PBS_NODEFILE) instead
+#
+#make sure to modify 'fanout' variable which gives number of leaf/be nodes on 
+#MRNet. If u assigned 'n' nodes for this job usually fanout => n - 1
+#
 
 if [ -z $FLOW_HOME ] ; then 
 	echo "[ERROR: FLOW_HOME Env variable is not found..]"
@@ -19,7 +33,6 @@ LOG_FILE=flow.log
 echo "[starting flow job...]"
 echo "[FLOW HOME directory is : $FLOW_HOME]" > $LOG_FILE
 
-fanout=2
 depth=1
 hostfile=$FLOW_HOME/jobs/hosts.txt
 topofile=$FLOW_HOME/top_file
