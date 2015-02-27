@@ -48,7 +48,10 @@ dataTest: dataTest.C *.h schema.o data.o operator.o process.o sight_common.o uti
 
 #MRNet integration specific targets
 .PHONY: mrnop
-mrnop: dataTest front backend filter.so
+mrnop: dataTest front backend filter.so simple_topgen
+
+simple_topgen: simple_topgen.C
+	${CXX} -g  simple_topgen.C -o simple_topgen
 
 mrnet_operator.o: mrnet_operator.C mrnet_operator.h mrnet_flow.h
 	${CXX} -g ${MRNET_CXXFLAGS} -I/usr/include mrnet_operator.C -c -o mrnet_operator.o
@@ -69,4 +72,4 @@ filter.so: filter.C mrnet_operator.o filter_init.o *.h schema.o data.o operator.
 	${CXX} -g ${MRNET_CXXFLAGS} ${MRNET_SOFLAGS} -I/usr/include filter.C mrnet_operator.o filter_init.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o filter.so ${MRNET_LIBS}
 
 clean:
-	rm -f *.o dataTest front backend filter.so
+	rm -f *.o dataTest front backend filter.so simple_topgen
