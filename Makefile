@@ -93,4 +93,4 @@ apps/histogram/filter.so: filter.C mrnet_operator.o apps/histogram/filter_init.o
 	${CXX} -g ${MRNET_CXXFLAGS} ${MRNET_SOFLAGS} -I./ filter.C mrnet_operator.o apps/histogram/filter_init.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram/filter.so ${MRNET_LIBS}
 
 clean:
-	rm -f *.o dataTest front backend filter.so simple_topgen
+	rm -f *.o dataTest front backend filter.so simple_topgen apps/histogram/*.o apps/histogram/front apps/histogram/filter.so apps/histogram/backend
