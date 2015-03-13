@@ -3,6 +3,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <math.h>
 
 using namespace std;
 
@@ -65,7 +66,7 @@ Operator::Operator(properties::iterator props) {
 	numOutputs = props.getInt("numOutputs");
 	ID         = props.getInt("ID");
 	inStreams.resize(numInputs);
-  outStreams.resize(numOutputs);
+    outStreams.resize(numOutputs);
 }
 
 Operator::~Operator() {
@@ -577,18 +578,20 @@ SynchedKeyValJoinOperator::~SynchedKeyValJoinOperator() {}
 std::vector<SchemaPtr> SynchedKeyValJoinOperator::inConnectionsComplete() {
   // Grab the schema of the incoming streams and verify that all the streams use the same schema
   assert(inStreams.size()>0);
-  for(vector<StreamPtr>::iterator in=inStreams.begin(); in!=inStreams.end(); ++in) {
+  vector<StreamPtr>::iterator in=inStreams.begin();
+  for(; in!=inStreams.end(); ++in) {
+
     if(in==inStreams.begin()) {
       schema = dynamicPtrCast<KeyValSchema>((*in)->getSchema());
       if(!schema) { cerr << "ERROR: SynchedKeyValJoinOperator requires incoming streams to have a KeyValSchema. Actual schema is "; (*in)->getSchema()->str(cerr); cerr<<endl; assert(0); }
-    } else if(schema != dynamicPtrCast<KeyValSchema>((*in)->getSchema())) { 
+    } else if(schema != dynamicPtrCast<KeyValSchema>((*in)->getSchema())) {
       cerr << "ERROR: SynchedKeyValJoinOperator requires that all incoming streams use the same schema but there is an inconsistency!"<<endl;
       cerr << "Incoming stream schemas:"<<endl;
       for(int i=0; i<inStreams.size(); ++i)
       { cerr << "    "<<i<<": "; (*in)->getSchema()->str(cerr); cerr << endl; }
-    } 
+    }
   }
-  
+
   // schema is now set to the common schema of all the input streams.
   // SynchedKeyValJoin only works with KeyValSchemas
   KeyValSchemaPtr keyValSchema = dynamicPtrCast<KeyValSchema>(schema);
@@ -753,5 +756,368 @@ propertiesPtr ScatterOperatorConfig::setProperties(propertiesPtr props) {
 }
 
 
+/*************************************
+***** RecordJoinOperator *****
+*************************************/
+
+SynchedRecordJoinOperator::SynchedRecordJoinOperator(unsigned int numInputs,
+        unsigned int ID, double start, double stop, double width) :
+        SynchOperator(numInputs, /*numOutputs*/ 1, ID) {
+    bin_width = width;
+    range_start = start;
+    range_stop = stop;
+
+}
+
+// Loads the Operator from its serialized representation
+SynchedRecordJoinOperator::SynchedRecordJoinOperator(properties::iterator props): SynchOperator(props.next()) {
+    assert(props.getContents().size()==0);
+    char* str_width = (char *) props.get("bin_width").c_str();
+    assert(str_width);
+
+    char* str_start = (char *) props.get("start").c_str();
+    assert(str_start);
+
+    char* str_stop = (char *) props.get("stop").c_str();
+    assert(str_stop);
+
+    //initilaize settings
+    bin_width = std::stod(str_width);
+    range_start = std::stod(str_start);
+    range_stop = std::stod(str_stop);
+
+
+}
+
+// Creates an instance of the Operator from its serialized representation
+OperatorPtr SynchedRecordJoinOperator::create(properties::iterator props) {
+    assert(props.name()=="SynchedRecordJoin");
+    return makePtr<SynchedKeyValJoinOperator>(props);
+}
+
+void SynchedRecordJoinOperator::inStreamsFinished() {
+    if(outStreams.size() > 0){
+        outStreams[0]->streamFinished();
+    }
+}
+
+SynchedRecordJoinOperator::~SynchedRecordJoinOperator() {}
+
+// Called to signal that all the incoming streams have been connected. Returns the schemas
+// of the outgoing streams based on the schemas of the incoming streams.
+std::vector<SchemaPtr> SynchedRecordJoinOperator::inConnectionsComplete() {
+    // Grab the schema of the incoming streams and verify that all the streams use the same schema
+    assert(inStreams.size()>0);
+    vector<StreamPtr>::iterator in=inStreams.begin();
+    for(; in!=inStreams.end(); ++in) {
+
+        if(in==inStreams.begin()) {
+            //all incoming streams for this is record type schemas
+            schema = dynamicPtrCast<RecordSchema>((*in)->getSchema());
+            if(!schema) { cerr << "ERROR: SynchedRecordJoin requires incoming streams to have a RecordSchema. Actual schema is "; (*in)->getSchema()->str(cerr); cerr<<endl; assert(0); }
+        } else if(schema != dynamicPtrCast<RecordSchema>((*in)->getSchema())) {
+            cerr << "ERROR: SynchedRecordJoin requires that all incoming streams use the same schema but there is an inconsistency!"<<endl;
+            cerr << "Incoming stream schemas:"<<endl;
+            for(int i=0; i<inStreams.size(); ++i)
+            { cerr << "    "<<i<<": "; (*in)->getSchema()->str(cerr); cerr << endl; }
+        }
+    }
+
+    // Generate the schema for the output of this operator
+    outputHistogramSchema = makePtr<HistogramSchema>();
+
+    // Now generate the schema for the single output stream
+    vector<SchemaPtr> ret;
+    ret.push_back(outputHistogramSchema);
+    return ret;
+}
+
+//join all incoming records to a histogram (partial)
+/*
+* 1. create a histogram obj
+*   1.b create bin for each respective window
+* 2. for each record in the desginated range increment the count in the respective bin
+* 3. add bins to histogram
+*
+*
+* */
+void SynchedRecordJoinOperator::work(const std::vector<DataPtr>& inData) {
+    assert(inData.size()>0);
+
+    //create histogram
+    HistogramPtr outputHisto = makePtr<Histogram>();
+    SharedPtr<Scalar<double> > min = makePtr<Scalar<double> >(range_start);
+    SharedPtr<Scalar<double> > max = makePtr<Scalar<double> >(range_stop);
+
+    DataPtr minDataptr = dynamicPtrCast<Data>(min);
+    DataPtr maxDataptr = dynamicPtrCast<Data>(max);
+    outputHisto->setMin(minDataptr) ;
+    outputHisto->setMax(maxDataptr) ;
+
+    //calculate and create number of bins
+    int num_bins = (int) floor((range_stop - range_start) / bin_width);
+    assert(num_bins > 0 );
+    //create a map of
+//    vector<HistogramBinPtr> histBins ;
+//    histBins.reserve(num_bins);
+    for(double i = range_start ; i < range_stop ; i += bin_width){
+        double bin_start = i ;
+        double bin_stop ;
+        if(i + bin_width <= range_stop){
+            //this is the last bin
+            bin_stop = range_stop;
+        }else{
+            bin_stop = i + bin_width;
+        }
+        HistogramBinPtr current_bin = makePtr<HistogramBin>();
+        SharedPtr<Scalar<double> > bin_start_data = makePtr<Scalar<double> >(bin_start);
+        SharedPtr<Scalar<double> > bin_stop_data = makePtr<Scalar<double> >(bin_stop);
+        //initialize count with 0
+        SharedPtr<Scalar<int> > bin_count_data = makePtr<Scalar<int> >(0);
+        HistogramBinSchemaPtr schemaForBin = dynamicPtrCast<HistogramBinSchema>(outputHistogramSchema->value) ;
+
+        current_bin->add(schemaForBin->field_start, bin_start_data, schemaForBin);
+        current_bin->add(schemaForBin->field_end, bin_stop_data, schemaForBin);
+        current_bin->add(schemaForBin->field_count, bin_count_data, schemaForBin);
+
+        //update Histogram with Bin
+        //key ==> start value ; value ==> this Histogram bin
+        outputHisto->aggregateBin(bin_start_data, current_bin);
+    }
+
+    //now that we have an initialized histogram
+    //do aggregate with incoming record values in 'inData'
+    map<DataPtr, std::list<DataPtr> >& histodataMap = outputHisto->getDataMod();
+    std::vector<DataPtr>::const_iterator dataRecordsIt = inData.begin();
+
+    for( ; dataRecordsIt != inData.end() ; dataRecordsIt++){
+        RecordPtr recs = dynamicPtrCast<Record>(*dataRecordsIt);
+        vector<DataPtr>::const_iterator recIt = recs->getFields().begin();
+        //for each record get the scalar data
+        //update bin count
+        for(; recIt != recs->getFields().end(); recIt++){
+            DataPtr p = *recIt ;
+            SharedPtr<Scalar<double> > sVal_Data = dynamicPtrCast<Scalar<double> >(p);
+            double sValue  = sVal_Data->get();
+            //if this value is greater than some start key and less than some stop key
+            //accept it to that particular bin
+            // bin_i  s.t.  bin_i [E] BINS where { bin_start <= r < bin_stop }
+            int binPos = (int)ceil((sValue - range_start)/bin_width);
+
+            //bin Key is the 'bin_start' value
+            double binKey = range_start + (binPos-1)*bin_width;
+            SharedPtr<Scalar<double> > binKeyData = makePtr<Scalar<double>>( binKey );
+
+            //get the relevant bin and then update count by 1
+            HistogramBinPtr binForKey = dynamicPtrCast<HistogramBin>(*histodataMap[binKeyData].begin());
+            binForKey->update(1);
+        }
+    }
+
+
+}
+
+// Write a human-readable string representation of this Operator to the given output stream
+std::ostream& SynchedRecordJoinOperator::str(std::ostream& out) const {
+    out << "[SynchedRecordJoinOperator: schema="; schema->str(out); out << "]";
+    return out;
+}
+
+/*****************************************
+* SynchedRecordJoin config
+*****************************************/
+
+SynchedRecordJoinOperatorConfig::SynchedRecordJoinOperatorConfig(unsigned int numInputs, unsigned int ID,  double start,
+        double stop, double width,  propertiesPtr props) :
+        OperatorConfig(numInputs, /*numOutputs*/ 1, ID, setProperties(start, stop, width,
+                 props)) {
+}
+
+propertiesPtr SynchedRecordJoinOperatorConfig::setProperties(  double start, double stop, double width,
+        propertiesPtr props)
+ {
+    if (!props) props = boost::make_shared<properties>();
+
+    map<string, string> pMap;
+    pMap["start"] = to_string(start);
+    pMap["stop"] = to_string(stop);
+    pMap["bin_width"] = to_string(width);
+
+    props->add("SynchedRecordJoin", pMap);
+
+    return props;
+}
+
+
+
+/********************************
+***** InMemorySourceOperator   **
+********************************/
+
+template <class NumType>
+InMemorySourceOperator::RandomNumberGenerator<NumType>::RandomNumberGenerator(InMemorySourceOperator& p):parent(p){
+    outData = list<DataPtr>();
+}
+
+template <class NumType>
+list<DataPtr>& InMemorySourceOperator::RandomNumberGenerator<NumType>::produce(){
+    outData.clear();
+    //generate a random number
+    srand(time(NULL));
+    RecordSchemaPtr recSch = dynamicPtrCast<RecordSchema>(parent.schema);
+    RecordPtr rec = makePtr<Record>(recSch);
+
+    //we get number of numbers for this gerneration using the fields in schema
+    int num = recSch->rFields.size() ;
+
+    std::map<std::string, SchemaPtr>::const_iterator recFieldsIt = recSch->rFields.begin();
+    for (int i = 0 ; i < num ; i++, recFieldsIt++) {
+        NumType rand_num = parent.rnd_min + static_cast <NumType> (rand()) /( static_cast <NumType> (RAND_MAX/(parent.rnd_max - parent.rnd_min)));
+        //add record to data ptr
+        SharedPtr<Scalar<NumType> > rand_num_data = makePtr<Scalar<NumType>>(rand_num);
+
+        rec->add(recFieldsIt->first, rand_num_data, parent.schema);
+    }
+    //transfer data once done
+    parent.outStreams[0]->transfer(rec);
+
+    //return data
+    outData.push_back(rec);
+    return outData;
+}
+
+InMemorySourceOperator::InMemorySourceOperator(unsigned int ID, unsigned int type,  int rnd_min, int rnd_max, int max_iters, SchemaPtr schema):
+        SourceOperator(/*numInputs*/ 0, /*numOutputs*/ 1, ID), schema(schema){
+    sourceType = type;
+    this->rnd_min = rnd_min;
+    this->rnd_max = rnd_max;
+    this->maxIters = max_iters;
+}
+
+
+// Loads the Operator from its serialized representation
+InMemorySourceOperator::InMemorySourceOperator(properties::iterator props) : SourceOperator(props.next()) {
+    //let default be random generaator
+    sourceType = RAND_SRC;
+    string srcType = props.get("srcType");
+    if(srcType == "RAND_SRC"){
+        sourceType = RAND_SRC;
+    }
+
+    string iters = props.get("maxIterations");
+    if(iters != ""){
+        maxIters = stoi(iters);
+    }else{
+        maxIters = DEFAULT_MAX_ITERATIONS;
+    }
+
+    string strMax = props.get("rndMax");
+    if(strMax != ""){
+        rnd_max = stoi(strMax);
+    }else{
+        rnd_max = 1000 ;
+    }
+    string strMin = props.get("rndMin");
+    if(strMax != ""){
+        rnd_min = stoi(strMin);
+    } else{
+        rnd_min = 1 ;
+    }
+    assert(rnd_max >= rnd_min);
+
+    assert(props.getContents().size()==1);
+    propertiesPtr schemaProps = *props.getContents().begin();
+    schema = SchemaRegistry::create(schemaProps);
+    assert(schema);
+
+}
+
+
+// Creates an instance of the Operator from its serialized representation
+OperatorPtr InMemorySourceOperator::create(properties::iterator props) {
+    assert(props.name()=="InMemorySource");
+    return makePtr<InMemorySourceOperator>(props);
+}
+
+
+// Called to signal that all the incoming streams have been connected. Returns the schemas
+// of the outgoing streams based on the schemas of the incoming streams.
+std::vector<SchemaPtr> InMemorySourceOperator::inConnectionsComplete() {
+    vector<SchemaPtr> schemas;
+    schemas.push_back(schema);
+    return schemas;
+}
+
+// Called to signal that all the outgoing streams have been connected.
+// Inside this call the operator may send Data objects on the outgoing streams.
+// After this call the operator's work() function may be called.
+void InMemorySourceOperator::outConnectionsComplete() {}
+
+// Called after the outputs of this Operator have been initialized.
+// The function is expected to return when there is no more data to be processed.
+// The implementation does not have to call streamFinished() on the outgoing streams as this
+// will be done automatically by the SourceOperator base class.
+void InMemorySourceOperator::work() {
+    assert(outStreams.size()==1);
+
+    int it = 0 ;
+    SourceProvider* externalSource;
+    while(it < maxIters) {
+        if(sourceType == RAND_SRC){
+            RandomNumberGenerator<double> rndGen(*this);
+            externalSource = &rndGen;
+        }else{
+            cerr << "Invalid Source type specified [" << sourceType << "]" << endl;
+            assert(0);
+        }
+        // transfer the next Data object from external source
+        externalSource->produce();
+        it++;
+    }
+    // The file has completed, inform the outgoing stream
+    outStreams[0]->streamFinished();
+}
+
+// Write a human-readable string representation of this Operator to the given output stream
+std::ostream& InMemorySourceOperator::str(std::ostream& out) const {
+    out << "[InMemorySourceOperator: ";
+    Operator::str(out);
+    out << "]";
+    return out;
+}
+
+/*****************************************
+* InMemorySourceOperator Config
+*****************************************/
+
+InMemorySourceOperatorConfig::InMemorySourceOperatorConfig(unsigned int ID, unsigned int type, int iters, int rnd_min, int rnd_max,
+        SchemaConfigPtr schemaCfg, propertiesPtr props):
+        OperatorConfig(/*numInputs*/ 0, /*numOutputs*/ 1, ID, setProperties(type, iters, rnd_min, rnd_max, schemaCfg, props)){
+
+}
+
+propertiesPtr InMemorySourceOperatorConfig::setProperties(unsigned int type, int iters, int rnd_min, int rnd_max,
+        SchemaConfigPtr schemaCfg, propertiesPtr props){
+    if(!props) props = boost::make_shared<properties>();
+
+    //init enum strings
+    map<int, string> srcType2String;
+    srcType2String[InMemorySourceOperator::source_type::RAND_SRC] = "RAND_SRC";
+
+    map<string, string> pMap;
+    pMap["srcType"]  = srcType2String[type];
+    pMap["maxIterations"] = to_string(iters);
+    pMap["rndMax"] = to_string(rnd_max);
+    pMap["rndMin"] = to_string(rnd_min);
+
+    props->add("InMemorySource", pMap);
+
+    // Add the properties of the schema as a sub-tag of props
+    if(schemaCfg->props)
+        props->addSubProp(schemaCfg->props);
+
+    return props;
+
+}
 
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "sight_common_internal.h"
 #include "comp_shared_ptr.h"
+#include "schema.h"
 #include <vector>
 #include <map>
 #include <assert.h>
@@ -434,6 +435,8 @@ class Scalar : public Data {
   void set(const T& newVal);
   const T& get() const;
   T& getMod();
+  void merge(const DataPtr& that_arg);
+
 
   // Return whether this object is identical to that object
   // that must have a name that is compatible with this
@@ -461,6 +464,124 @@ class Scalar : public Data {
   // output stream
   std::ostream& str(std::ostream& out, ConstSchemaPtr schema) const;
 }; // class Scalar
+
+
+/*************************
+***** HistogramBin   *****
+*************************/
+
+// A named record, which maps string names to DataPtr values
+class HistogramBin;
+typedef SharedPtr<HistogramBin> HistogramBinPtr;
+class HistogramBinSchema;
+typedef SharedPtr<const HistogramBinSchema> ConstHistogramBinSchemaPtr;
+
+class HistogramBin : public Data {
+public:
+
+    DataPtr count ;
+    DataPtr start;
+    DataPtr end ;
+    HistogramBin(ConstHistogramBinSchemaPtr schema);
+    HistogramBin();
+
+    //accessor functions
+    DataPtr getCount(){ return count ;}
+    DataPtr getStartPos(){ return start ;}
+    DataPtr getEndPos(){ return end ;}
+
+    void merge (const DataPtr& that_arg);
+
+    void update (int count);
+    // Maps the given field name to the given data object.
+    void add(const std::string& label, DataPtr obj, ConstHistogramBinSchemaPtr schema);
+
+    // Returns a shared pointer to the data at the given field within the record, or
+    // NULLDataPtr if this field does not exist.
+    DataPtr get(const std::string& label, ConstHistogramBinSchemaPtr schema) const;
+
+    // Return whether this object is identical to that object
+    // that must have a name that is compatible with this
+    bool operator==(const DataPtr& that_arg) const;
+    virtual bool operator==(const HistogramBinPtr& that) const;
+
+    // Return whether this object is strictly less than that object
+    // that must have a name that is compatible with this
+    bool operator<(const DataPtr& that_arg) const;
+    bool operator<(const HistogramBinPtr that) const;
+
+    // Call the parent class's getName call and then Append this class' unique name
+    // to the name list.
+    void getName(std::list<std::string>& name) const;
+
+    //properties* serializeRecord(properties* props);
+    // Defines this class and its places in its inheritance hierarchy
+    //DATA_DEFS(Record, Data)
+
+    // Write a human-readable string representation of this object to the given
+    // output stream
+    std::ostream& str(std::ostream& out, ConstSchemaPtr schema) const;
+}; // class Record
+
+/**********************
+***** Histogram   *****
+***********************/
+
+class Histogram;
+typedef SharedPtr<Histogram> HistogramPtr;
+typedef SharedPtr<RecordSchema> RecordSchemaPtr;
+class HistogramSchema;
+typedef SharedPtr<HistogramSchema> HistogramSchemaPtr;
+
+class Histogram : public Data {
+    //bin map for this histogram
+    //stores all the bins for a particular histogram
+    //key is the starting range of a respective bin
+    std::map<DataPtr, std::list<DataPtr> > data;
+
+    DataPtr minValue;
+    DataPtr maxValue;
+
+public:
+    Histogram();
+
+    void setMin(DataPtr& min);
+    void setMax(DataPtr& min);
+
+    DataPtr& getMin();
+    DataPtr& getMax();
+
+    const std::map<DataPtr, std::list<DataPtr> >& getData() const { return data; }
+    std::map<DataPtr, std::list<DataPtr> >& getDataMod() { return data; }
+
+
+    // Adds a Bin to the binmap
+    //this opeartion works as follows
+    // a.lookup if HistogramBin exist for 'key'
+    //  a.1 if not found then insert Bin
+    //  a.2 else perform aggregate 'value' bin with the existing bin
+    void aggregateBin(const DataPtr& key, const DataPtr& value);
+
+    // Return whether this object is identical to that object
+    // that must have a name that is compatible with this
+    bool operator==(const DataPtr& that_arg) const;
+
+    // Return whether this object is strictly less than that object
+    // that must have a name that is compatible with this
+    bool operator<(const DataPtr& that_arg) const;
+
+    // Call the parent class's getName call and then Append this class' unique name
+    // to the name list.
+    void getName(std::list<std::string>& name) const;
+
+    // Defines this class and its places in its inheritance hierarchy
+    //DATA_DEFS(ExplicitKeyValMap, Data)
+
+    // Write a human-readable string representation of this object to the given
+    // output stream
+    std::ostream& str(std::ostream& out, ConstSchemaPtr schema) const;
+
+};
 
 /* Implementation of an n-dimensional dense array KeyValMap, where the keys are n-dim 
  * numeric Records and the values are arbitrary Records. 
@@ -567,3 +688,4 @@ class Scalar : public Data {
 }; // class nDimDenseArray
 typedef SharedPtr<nDimDenseArray> nDimDenseArrayPtr;
 */
+

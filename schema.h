@@ -25,6 +25,9 @@ using namespace sight;
 class Schema;
 typedef SharedPtr<Schema> SchemaPtr;
 
+class Data;
+typedef SharedPtr<Data> DataPtr;
+
 #ifdef SCHEMA_C
 SchemaPtr NULLSchemaPtr;
 #else
@@ -356,7 +359,9 @@ class KeyValSchema: public Schema, public boost::enable_shared_from_this<KeyValS
   public:
   SchemaPtr key;
   SchemaPtr value;
-  
+
+  KeyValSchema();
+
   KeyValSchema(const SchemaPtr& key, const SchemaPtr& value);
   
   // Loads the Schema from a configuration file. add() or finalize() may not be called after this constructor.
@@ -504,6 +509,138 @@ class ScalarSchemaConfig: public SchemaConfig {
     
   propertiesPtr setProperties(ScalarSchema::scalarType type, propertiesPtr props);
 }; // class ScalarSchemaConfig
+
+
+/*******************************
+***** Histogram Bin Schema *****
+********************************/
+/*
+* This is a direct derived data type of a Record Schema; has following records
+*   start: [Scalar: val={x}, type=double]
+*   end: [Scalar: val={x}, type=double]
+*   count: [Scalar: val={x}, type=int]
+* */
+class HistogramBinSchemaConfig;
+
+class HistogramBinSchema:public RecordSchema{
+friend class HistogramBinSchemaConfig;
+public:
+    const std::string field_start;
+    const std::string field_end;
+    const std::string field_count;
+    std::map<std::string, SchemaPtr> rFields2;
+
+public:
+    HistogramBinSchema(properties::iterator props);
+
+    // Creates an instance of the schema from its serialized representation
+    static SchemaPtr create(properties::iterator props);
+
+    // Creates an Histogram bin. add() is called internally create a specific bin and finalize() to
+    // complete the mapping.
+    HistogramBinSchema();
+
+    // Serializes the given data object into and writes it to the given outgoing stream
+    void serialize(DataPtr obj, FILE* out) const;
+
+    // Serializes the given data object into and writes it to the given outgoing stream buffer
+    void serialize(DataPtr obj, StreamBuffer * buffer) const;
+
+    // Reads the serialized representation of a Data object from the stream,
+    // creates a binary representation of the object and returns a shared pointer to it.
+    DataPtr deserialize(FILE* in) const;
+
+    DataPtr deserialize(StreamBuffer * in) const;
+
+    // Write a human-readable string representation of this object to the given
+    // output stream
+    std::ostream& str(std::ostream& out) const;
+
+    // Returns the Schema configuration object that describes this schema. Such configurations
+    // can be created without creating a full schema (more expensive) but if we already have
+    // a schema, this method makes it possible to get its configuration.
+    SchemaConfigPtr getConfig() const;
+};
+
+typedef SharedPtr<HistogramBinSchema> HistogramBinSchemaPtr;
+
+
+class HistogramBinSchemaConfig: public SchemaConfig {
+public:
+    HistogramBinSchemaConfig(const std::map<std::string, SchemaConfigPtr> &rFields, propertiesPtr props=NULLProperties);
+
+    propertiesPtr setProperties(const std::map<std::string, SchemaConfigPtr> &rFields, propertiesPtr props);
+}; // class RecordSchemaConfig
+typedef SharedPtr<HistogramBinSchemaConfig> HistogramBinSchemaConfigPtr;
+
+
+/*******************************
+***** Histogram Schema *****
+********************************/
+/*
+* This is a direct derived data type of a Record Schema; has following records
+             min: [Scalar: val={x}, type=double]   //minimum range value
+*            max: [Scalar: val={x}, type=double]   //maximum range value
+*            key/val schema
+*            key :  [Scalar: val={str}, type=string]
+*            val :  [ HistogramBinSchema ]
+*
+*/
+// Schema for an explicit representation of key->value mappings (ExplicitKeyValMap)
+// that keeps it as a list of key->value pairs.
+class HistogramSchema : public KeyValSchema {
+public:
+    //schemas for min-max range
+    ScalarSchemaPtr min;
+    ScalarSchemaPtr max;
+
+    //key/value is inherited from KeyValSchema
+
+    HistogramSchema() ;
+
+    // Loads the Schema from a configuration file. add() or finalize() may not be called after this constructor.
+    HistogramSchema(properties::iterator props);
+
+    // Creates an instance of the schema from its serialized representation
+    static SchemaPtr create(properties::iterator props);
+
+    // Serializes the given data object into and writes it to the given outgoing stream
+    void serialize(DataPtr obj, FILE* out) const;
+
+    // Serializes the given data object into and writes it to the given outgoing stream buffer
+    void serialize(DataPtr obj, StreamBuffer * buffer) const;
+
+    // Reads the serialized representation of a Data object from the stream,
+    // creates a binary representation of the object and returns a shared pointer to it.
+    DataPtr deserialize(FILE* in) const;
+
+    DataPtr deserialize(StreamBuffer * in) const;
+
+    // Write a human-readable string representation of this object to the given
+    // output stream
+    std::ostream& str(std::ostream& out) const;
+
+    // Returns the Schema configuration object that describes this schema. Such configurations
+    // can be created without creating a full schema (more expensive) but if we already have
+    // a schema, this method makes it possible to get its configuration.
+    SchemaConfigPtr getConfig() const;
+}; // class ExplicitKeyValSchema
+typedef SharedPtr<HistogramSchema> HistogramSchemaPtr;
+typedef SharedPtr<const HistogramSchema> ConstHistogramSchemaPtr;
+
+
+/**********************************
+***** Histogram Config Schema *****
+***********************************/
+
+class HistogramSchemaConfig: public SchemaConfig {
+public:
+    HistogramSchemaConfig(const std::map<std::string, SchemaConfigPtr> &rFields, propertiesPtr props=NULLProperties);
+
+    propertiesPtr setProperties(const std::map<std::string, SchemaConfigPtr> &rFields, propertiesPtr props);
+}; // class RecordSchemaConfig
+typedef SharedPtr<HistogramSchemaConfig> HistogramSchemaConfigPtr;
+
 
 /*
 // Implementation of an n-dimensional dense array KeyValMap, where the keys are n-dim 

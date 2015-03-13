@@ -1,5 +1,5 @@
-REPO_PATH=/N/u/uswickra/Karst/MRNet/mrnet_4.1.0
-BOOST_INSTALL_DIR=/N/u/uswickra/Karst/boost/boost_1_52_0/install
+REPO_PATH=/home/udayanga/Software/Flow/MRNet/mrnet_4.1.0/build/x86_64-unknown-linux-gnu
+BOOST_INSTALL_DIR=/home/udayanga/Software/Flow/Boost/boost_1_52_0/install
 
 MRNET_CXXFLAGS = -g -fPIC -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS  \
 				-I${REPO_PATH}/include/mrnet  \
@@ -13,7 +13,7 @@ MRNET_CXXFLAGS = -g -fPIC -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STD
 
 CXX = g++
 #CXX = clang++
-CXXFLAGS = -fPIC -I${BOOST_INSTALL_DIR}/include
+CXXFLAGS = -fPIC -I${BOOST_INSTALL_DIR}/include -std=c++11
 
 LDFLAGS = -L${BOOST_INSTALL_DIR}/lib -lboost_thread -lboost_system
 
@@ -70,6 +70,27 @@ backend: backend.C mrnet_operator.o *.h schema.o data.o operator.o process.o sig
 
 filter.so: filter.C mrnet_operator.o filter_init.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
 	${CXX} -g ${MRNET_CXXFLAGS} ${MRNET_SOFLAGS} -I/usr/include filter.C mrnet_operator.o filter_init.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o filter.so ${MRNET_LIBS}
+
+#############################################################
+#
+#build apps
+#currently source for histogram app
+#############################################################
+
+.PHONY: histogram
+histogram: mrnop apps/histogram/front apps/histogram/backend apps/histogram/filter.so
+
+apps/histogram/filter_init.o: mrnet_operator.h mrnet_flow.h apps/histogram/filter_init.h
+	${CXX} -g  ${MRNET_CXXFLAGS} -I./ apps/histogram/filter_init.C -c -o apps/histogram/filter_init.o
+
+apps/histogram/front: apps/histogram/front.C mrnet_operator.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
+	${CXX} -g ${MRNET_CXXFLAGS} -I./ apps/histogram/front.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram/front ${MRNET_LIBS}
+
+apps/histogram/backend: apps/histogram/backend.C mrnet_operator.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
+	${CXX} -g ${MRNET_CXXFLAGS} -I./ apps/histogram/backend.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram/backend ${MRNET_LIBS}
+
+apps/histogram/filter.so: filter.C mrnet_operator.o apps/histogram/filter_init.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
+	${CXX} -g ${MRNET_CXXFLAGS} ${MRNET_SOFLAGS} -I./ filter.C mrnet_operator.o apps/histogram/filter_init.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram/filter.so ${MRNET_LIBS}
 
 clean:
 	rm -f *.o dataTest front backend filter.so simple_topgen

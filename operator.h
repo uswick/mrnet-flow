@@ -319,9 +319,10 @@ class SourceOperator: public Operator {
 
 // Operator that reads Data objects from a given FILE* using a given Schema
 class InFileOperator : public SourceOperator {
+
   private:
-  SchemaPtr schema;
-  FILE* inFile;
+    SchemaPtr schema;
+    FILE* inFile;
   
   // Records whether we need to close the file in the destructor or whether it will be destroyed by users of this Operator
   bool closeFile;
@@ -636,3 +637,156 @@ class Map: public Operator {
 			
 			};
 */
+
+
+
+// Operator that computes the join scalar record objects and produce histogram bin data
+
+class SynchedRecordJoinOperator : public SynchOperator {
+private:
+
+    //window for aggregaion
+    double range_start, range_stop;
+    //width for a histogram bin
+    double bin_width;
+    // The schema of the incoming streams. All streams must use the same schema.
+    //this will be defined from the incoming stream
+    RecordSchemaPtr schema;
+
+    // The schema of the key->value mappings that will be emitted by this operator
+    HistogramSchemaPtr outputHistogramSchema;
+
+public:
+    SynchedRecordJoinOperator(unsigned int numInputs, unsigned int ID, double start, double stop, double width);
+
+    // Loads the Operator from its serialized representation
+    SynchedRecordJoinOperator(properties::iterator props);
+
+    // Creates an instance of the Operator from its serialized representation
+    static OperatorPtr create(properties::iterator props);
+
+    virtual void inStreamsFinished();
+
+    ~SynchedRecordJoinOperator();
+
+    // Called to signal that all the incoming streams have been connected. Returns the schemas
+    // of the outgoing streams based on the schemas of the incoming streams.
+    std::vector<SchemaPtr> inConnectionsComplete();
+
+    // Called when a record arrives on all the incoming streams (synched by parent operator).
+    // inData: holds the Data object from each stream.
+    // This function may send Data objects on some of the outgoing streams.
+    void work(const std::vector<DataPtr>& inData);
+
+    // Write a human-readable string representation of this Operator to the given output stream
+    std::ostream& str(std::ostream& out) const;
+};
+
+/*****************************************
+* SynchedRecordJoin config
+*****************************************/
+/*
+[|SynchedRecordJoin numProperties="3" name0="start" val0="..." name1="stop" val0=""
+        name2="bin_width" val2=""      ]
+[Operator numProperties="3" name0="ID" val0="0" name1="numInputs" val1="0" name2="numOutputs" val2="1"]
+
+[/SynchedRecordJoin]
+
+*/
+
+class SynchedRecordJoinOperatorConfig: public OperatorConfig {
+public:
+    SynchedRecordJoinOperatorConfig(unsigned int numInputs, unsigned int ID,  double start, double stop, double width,
+             propertiesPtr props=NULLProperties);
+
+    static propertiesPtr setProperties(  double start, double stop, double width,
+            propertiesPtr props);
+};
+
+
+
+
+
+
+// Operator that reads Data objects from a external source residing in-memory
+
+class InMemorySourceOperator : public SourceOperator {
+private:
+    const static int DEFAULT_MAX_ITERATIONS = 5 ;
+    unsigned int sourceType;
+    SchemaPtr schema;
+    int rnd_min ;
+    int rnd_max ;
+    int maxIters;
+
+public:
+    typedef enum {RAND_SRC} source_type;
+
+    class SourceProvider {
+    public:
+        virtual list<DataPtr>&produce() = 0;
+    };
+
+    template <class NumType>
+    class RandomNumberGenerator : public SourceProvider {
+        private:
+            InMemorySourceOperator& parent ;
+            list<DataPtr> outData;
+
+        public:
+        RandomNumberGenerator(InMemorySourceOperator& p);
+        list<DataPtr>&produce();
+    };
+    // type: points to the FILE from which we'll read data
+    // schema: the schema of the data from inFile
+    InMemorySourceOperator(unsigned int ID, unsigned int type, int rnd_min, int rnd_max, int max_iters, SchemaPtr schema);
+
+    // Loads the Operator from its serialized representation
+    InMemorySourceOperator(properties::iterator props);
+
+
+    // Creates an instance of the Operator from its serialized representation
+    static OperatorPtr create(properties::iterator props);
+
+
+    // Called to signal that all the incoming streams have been connected. Returns the schemas
+    // of the outgoing streams based on the schemas of the incoming streams.
+    std::vector<SchemaPtr> inConnectionsComplete();
+
+    // Called to signal that all the outgoing streams have been connected.
+    // After this call the operator's work() function may be called.
+    void outConnectionsComplete();
+
+    // Called after the outputs of this Operator have been initialized.
+    // The function is expected to return when there is no more data to be processed.
+    // The implementation does not have to call streamFinished() on the outgoing streams as this
+    // will be done automatically by the SourceOperator base class.
+    void work();
+
+    // Write a human-readable string representation of this Operator to the given output stream
+    virtual std::ostream& str(std::ostream& out) const;
+
+
+};
+
+/*****************************************
+* InMemorySource config
+*****************************************/
+/*
+[|InMemorySource numProperties="3" name0="srcType" val0="..." name1="maxIterations" val1=".."
+        name2="rndMax" val2=".." name2="rndMin" val2=".."     ]
+[Operator numProperties="3" name0="ID" val0="0" name1="numInputs" val1="0" name2="numOutputs" val2="1"]
+[schema]
+...
+[schema]
+[/InMemorySource]
+
+*/
+
+class InMemorySourceOperatorConfig: public OperatorConfig {
+public:
+    InMemorySourceOperatorConfig(unsigned int ID, unsigned int type, int iters, int rnd_min, int rnd_max, SchemaConfigPtr schemaCfg, propertiesPtr props=NULLProperties);
+
+    static propertiesPtr setProperties(unsigned int type, int iters, int rnd_min, int rnd_max, SchemaConfigPtr schemaCfg, propertiesPtr props);
+
+};

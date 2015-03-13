@@ -411,6 +411,12 @@ const T& Scalar<T>::get() const { return val; }
 template<typename T>
 T& Scalar<T>::getMod() { return val; }
 
+template<typename T>
+void Scalar<T>::merge(const DataPtr& that_arg){
+    SharedPtr<Scalar<T> > that = dynamicPtrCast<Scalar<T> >(that_arg);
+    val = val + that->val;
+}
+
 // Return whether this object is identical to that object
 // that must have a name that is compatible with this
 template<typename T>
@@ -588,3 +594,223 @@ template class Scalar<double>;
 }; // class nDimDenseArray
 typedef SharedPtr<nDimDenseArray> nDimDenseArrayPtr;
 */
+
+
+
+/*************************
+***** HistogramBin   *****
+*************************/
+
+HistogramBin::HistogramBin(ConstHistogramBinSchemaPtr schema) {
+    assert(schema->schemaFinalized);
+}
+
+HistogramBin::HistogramBin() {
+}
+
+void HistogramBin::merge (const DataPtr& that_arg){
+    HistogramBinPtr that = dynamicPtrCast<HistogramBin>(that_arg);
+    if(that->start == start && that->end == end){
+        //get scalar pointer for this obj
+        SharedPtr<Scalar<int> > countScalar = dynamicPtrCast<Scalar<int> >(count);
+        //merge with the value
+        countScalar->merge(that->count);
+    }else {
+        cerr << "HistogramBin::merge() ERROR: can't applying merging to incompatible ranges : [" <<
+                that->start << " : " << start << "] [" <<
+                that->end << " : " << end << "] "<<endl; assert(0);
+    }
+}
+
+void HistogramBin::update(int countValue){
+    assert(countValue >= 0);
+    //get scalar pointer for this obj
+    SharedPtr<Scalar<int> > countScalar = dynamicPtrCast<Scalar<int> >(count);
+    SharedPtr<Scalar<int> > newCount = makePtr<Scalar<int> >(countValue);
+    //merge with the value
+    countScalar->merge(newCount);
+
+}
+
+// Maps the given field name to the given data object
+void HistogramBin::add(const std::string& label, DataPtr obj, const ConstHistogramBinSchemaPtr schema) {
+    assert(schema->schemaFinalized);
+    if(label == schema->field_start ){
+        start = obj ;
+    }else if (label == schema->field_count) {
+        count = obj ;
+    }else if (label == schema->field_end) {
+        end = obj ;
+    }
+    else{
+        cerr << "HistogramBin::add() ERROR: applying method to incompatible bin label : " << label << " !"<<endl; assert(0);
+    }
+}
+
+// Returns a shared pointer to the data at the given field within the record, or
+// NULLDataPtr if this field does not exist.
+DataPtr HistogramBin::get(const std::string& label, const ConstHistogramBinSchemaPtr schema) const {
+    assert(schema->schemaFinalized);
+    if(label == schema->field_start ){
+        return start ;
+    }else if (label == schema->field_count) {
+        return count  ;
+    }else if (label == schema->field_end) {
+        return end;
+    }
+}
+
+// Return whether this object is identical to that object
+// that must have a name that is compatible with this
+bool HistogramBin::operator==(const DataPtr& that_arg) const {
+    HistogramBinPtr that = dynamicPtrCast<HistogramBin>(that_arg);
+    if(!that) { cerr << "HistogramBin::operator==() ERROR: applying method to incompatible Data objects!"<<endl; assert(0); }
+    return *this == that;
+}
+
+bool HistogramBin::operator==(const HistogramBinPtr& that) const{
+    return start == that->start && count == that->count && end == that->count; }
+
+// Return whether this object is strictly less than that object
+// that must have a name that is compatible with this
+bool HistogramBin::operator<(const DataPtr& that_arg) const {
+    HistogramBinPtr that = dynamicPtrCast<HistogramBin>(that_arg);
+    if(!that) { cerr << "HistogramBin::operator<() ERROR: applying method to incompatible Data objects!"<<endl; assert(0); }
+    return *this < that;
+}
+bool HistogramBin::operator<(const HistogramBinPtr that) const
+{ return start < that->start || count < that->count || end < that->count; }
+
+// Call the parent class's getName call and then Append this class' unique name
+// to the name list.
+void HistogramBin::getName(std::list<std::string>& name) const {
+    Data::getName(name);
+    name.push_back("HistogramBin");
+}
+
+// Write a human-readable string representation of this object to the given
+// output stream
+std::ostream& HistogramBin::str(std::ostream& out, ConstSchemaPtr schema_arg) const {
+    ConstHistogramBinSchemaPtr schema = dynamicPtrCast<const HistogramBinSchema>(schema_arg);
+
+    out << "[HistogramBin: bins="<<endl;
+    std::map<std::string, SchemaPtr> fields;
+//    SchemaPtr sch = fields["start"];
+    ConstSchemaPtr sch_start = staticConstPtrCast<Schema>(schema->rFields.find(schema->field_start)->second);
+    ConstSchemaPtr sch_end = staticConstPtrCast<Schema>(schema->rFields.find(schema->field_end)->second);
+    ConstSchemaPtr sch_count = staticConstPtrCast<Schema>(schema->rFields.find(schema->field_count)->second);
+
+    cout << "    "<<schema->field_start << ": "; start->str(cout, sch_start); cout<<endl;
+    cout << "    "<<schema->field_end<<": "; end->str(cout, sch_end); cout<<endl;
+    cout << "    "<<schema->field_count<<": "; count->str(cout, sch_count); cout<<endl;
+    out << "]";
+    return out;
+}
+
+/**********************
+***** Histogram   *****
+***********************/
+
+Histogram::Histogram(){
+
+}
+
+void Histogram::setMin(DataPtr& min){
+    minValue = min ;
+}
+
+void Histogram::setMax(DataPtr& max){
+    maxValue = max;
+}
+
+DataPtr& Histogram::getMin(){
+    return minValue;
+}
+DataPtr& Histogram::getMax(){
+    return maxValue;
+}
+
+bool  Histogram::operator==(const DataPtr& that_arg) const{
+    HistogramPtr that = dynamicPtrCast<Histogram>(that_arg);
+    bool isEqual =  ( minValue == that->minValue && maxValue == that->maxValue ) ;
+    if(isEqual){
+        //check all members in map
+        map<DataPtr, std::list<DataPtr> >::const_iterator it = data.begin();
+        for(; it != data.end(); it++){
+            DataPtr p = *it->second.begin();
+            DataPtr k = it->first;
+            DataPtr that_p = *that->data[k].begin();
+            isEqual &= that_p == p ;
+        }
+    }
+
+    return isEqual;
+}
+
+// Return whether this object is strictly less than that object
+// that must have a name that is compatible with this
+bool  Histogram::operator<(const DataPtr& that_arg) const{
+    HistogramPtr that = dynamicPtrCast<Histogram>(that_arg);
+    bool isLess =  ( minValue < that->minValue || maxValue < that->maxValue ) ;
+    if(isLess){
+        //check all members in map
+        map<DataPtr, std::list<DataPtr> >::const_iterator it = data.begin();
+        for(; it != data.end(); it++){
+            DataPtr p = *it->second.begin();
+            DataPtr k = it->first;
+            DataPtr that_p = *that->data[k].begin();
+            isLess = isLess || that_p < p ;
+        }
+    }
+
+    return isLess;
+}
+
+// Adds a Bin to the histogram
+//this opeartion works as follows
+// a.lookup if HistogramBin exist for 'key'
+//  a.1 if not found then insert Bin
+//  a.2 else perform aggregate 'value' bin with the existing bin
+void Histogram::aggregateBin(const DataPtr& key, const DataPtr& value){
+    HistogramBinPtr newBin = dynamicPtrCast<HistogramBin>(value);
+
+    if(data.find(key) == data.end()) {
+        //first time
+        data[key] = list<DataPtr>();
+        data[key].push_back(value);
+    }else {
+        //get data list for modification ; note & here
+        list<DataPtr>& lst = data[key];
+        DataPtr dataForKey = *lst.begin();
+        HistogramBinPtr binForKey = dynamicPtrCast<HistogramBin>(dataForKey);
+        //merge with new bin
+        binForKey->merge(value);
+    }
+
+}
+
+
+// Call the parent class's getName call and then Append this class' unique name
+// to the name list.
+void  Histogram::getName(std::list<std::string>& name) const{
+    Data::getName(name);
+    name.push_back("Histogram");
+}
+
+std::ostream& Histogram::str(std::ostream& out, ConstSchemaPtr schema_arg) const {
+    ConstHistogramSchemaPtr schema = dynamicPtrCast<const HistogramSchema>(schema_arg);
+
+    out << "[Histogram: "<<endl;
+
+    out << "    Min: "; minValue->str(out, schema->min); out<<": "<<endl;
+    out << "    Max: "; maxValue->str(out, schema->max); out<<": "<<endl;
+
+    for(std::map<DataPtr, list<DataPtr> >::const_iterator key=data.begin(); key!=data.end(); key++) {
+        out << "    "; key->first->str(out, schema->key); out<<": "<<endl;
+        for(list<DataPtr>::const_iterator value=key->second.begin(); value!=key->second.end(); value++) {
+            out << "        "; (*value)->str(out, schema->value); out << endl;
+        }
+    }
+    out << "]";
+    return out;
+}

@@ -601,7 +601,9 @@ propertiesPtr RecordSchemaConfig::setProperties(const std::map<std::string, Sche
 /************************
  ***** KeyValSchema *****
  ************************/
- 
+
+KeyValSchema::KeyValSchema() {}
+
 KeyValSchema::KeyValSchema(const SchemaPtr& key, const SchemaPtr& value) :
   key(key), value(value) {}
 
@@ -1152,4 +1154,388 @@ propertiesPtr ScalarSchemaConfig::setProperties(ScalarSchema::scalarType type, p
   props->add("Scalar", pMap);
   
   return props;
+}
+
+
+/*******************************
+***** Histogram Bin Schema *****
+********************************/
+
+HistogramBinSchema::HistogramBinSchema(properties::iterator props):field_start("start"), field_end("end"), field_count("count"){
+    assert(props.name()=="HistogramBin");
+
+    schemaFinalized = false;
+
+    int numFields = props.getInt("numFields");
+
+    assert(numFields == props.getContents().size());
+    //num of fields are static - start,end,count
+    assert(numFields == 3);
+
+    int i=0;
+    for(list<propertiesPtr>::const_iterator sub=props.getContents().begin(); sub!=props.getContents().end(); ++sub, ++i) {
+        SchemaPtr valSchema = SchemaRegistry::create(*sub);
+        add(props.get(txt()<<"field_"<<i), valSchema);
+    }
+
+    finalize();
+}
+
+SchemaPtr HistogramBinSchema::create(properties::iterator props){
+    assert(props.name()=="HistogramBin");
+    return makePtr<HistogramBinSchema>(props);
+}
+
+HistogramBinSchema::HistogramBinSchema():field_start("start"), field_end("end"), field_count("count"){
+    schemaFinalized = false;
+
+    //add start
+    ScalarSchemaPtr start_schema = makePtr<ScalarSchema>(ScalarSchema::doubleT);
+    add(field_start, start_schema);
+
+    //add end
+    ScalarSchemaPtr end_schema = makePtr<ScalarSchema>(ScalarSchema::doubleT);
+    add(field_end, end_schema);
+
+    //add count
+    ScalarSchemaPtr count_schema = makePtr<ScalarSchema>(ScalarSchema::intT);
+    add(field_count, count_schema);
+
+    finalize();
+}
+
+//TODO - change Dataptr type to HistogramBin
+// Serializes the given data object into and writes it to the given outgoing stream
+void HistogramBinSchema::serialize(DataPtr obj_arg, FILE* out) const {
+    HistogramBinPtr obj = dynamicPtrCast<HistogramBin>(obj_arg);
+    if(!obj) { cerr << "ERROR: HistogramBinSchema::serialize is provided incompatible object "<<obj_arg->str(cerr, shared_from_this())<<"!"; assert(0); }
+
+    //cout << "#rFields="<<rFields.size()<<", #obj->rFields="<<obj->rFields.size()<<endl;
+    assert(rFields.size() == 3);
+    map<string, SchemaPtr>::const_iterator sField=rFields.begin();
+    for(; sField!=rFields.end(); ++sField) {
+        if(sField->first == field_start){
+            sField->second->serialize(obj->start, out);
+        }
+        else if(sField->first == field_end){
+            sField->second->serialize(obj->end, out);
+        }
+        else if(sField->first == field_count){
+            sField->second->serialize(obj->count, out);
+        } else {
+            cerr << "ERROR: HistogramBinSchema::serialize failed, invalid schema" <<endl ;
+            assert(0);
+        }
+    }
+}
+
+void HistogramBinSchema::serialize(DataPtr obj_arg, StreamBuffer * out) const {
+    HistogramBinPtr obj = dynamicPtrCast<HistogramBin>(obj_arg);
+    if(!obj) { cerr << "ERROR: HistogramBinSchema::serialize is provided incompatible object "<<obj_arg->str(cerr, shared_from_this())<<"!"; assert(0); }
+
+    //cout << "#rFields="<<rFields.size()<<", #obj->rFields="<<obj->rFields.size()<<endl;
+    assert(rFields.size() == 3);
+    map<string, SchemaPtr>::const_iterator sField=rFields.begin();
+    for(; sField!=rFields.end(); ++sField) {
+        if(sField->first == field_start){
+            sField->second->serialize(obj->start, out);
+        }
+        else if(sField->first == field_end){
+            sField->second->serialize(obj->end, out);
+        }
+        else if(sField->first == field_count){
+            sField->second->serialize(obj->count, out);
+        } else {
+            cerr << "ERROR: HistogramBinSchema::serialize failed, invalid schema" <<endl ;
+            assert(0);
+        }
+
+    }
+}
+
+// Reads the serialized representation of a Data object from the stream,
+// creates a binary representation of the object and returns a shared pointer to it.
+DataPtr HistogramBinSchema::deserialize(FILE* in) const {
+    HistogramBinPtr rec = makePtr<HistogramBin>(shared_from_this());
+
+    // Read each field
+//  cout << "RecordSchema::deserialize() #rFields="<<rFields.size()<<endl;
+    for(map<string, SchemaPtr>::const_iterator sField=rFields.begin(); sField!=rFields.end(); ++sField) {
+//    cout << "    "<<sField->first<<endl;
+        DataPtr fieldD = sField->second->deserialize(in);
+//    cout << "    adding"<<endl;
+        rec->add(sField->first, fieldD, shared_from_this());
+    }
+
+    return rec;
+}
+
+DataPtr HistogramBinSchema::deserialize(StreamBuffer * in) const {
+    HistogramBinPtr rec = makePtr<HistogramBin>(shared_from_this());
+
+    // Read each field
+//  cout << "RecordSchema::deserialize() #rFields="<<rFields.size()<<endl;
+    for(map<string, SchemaPtr>::const_iterator sField=rFields.begin(); sField!=rFields.end(); ++sField) {
+//    cout << "    "<<sField->first<<endl;
+        DataPtr fieldD = sField->second->deserialize(in);
+//    cout << "    adding"<<endl;
+        rec->add(sField->first, fieldD, shared_from_this());
+    }
+
+    return rec;
+}
+
+// Write a human-readable string representation of this object to the given
+// output stream
+std::ostream& HistogramBinSchema::str(std::ostream& out) const {
+    out << "[HistogramBinSchema: "<<endl;
+    for(map<string, SchemaPtr>::const_iterator f=rFields.begin(); f!=rFields.end(); ++f) {
+        if(f!=rFields.begin()) out << endl;
+        out << "    "<<f->first<<": "; f->second->str(out);
+    }
+    out << "]";
+    return out;
+}
+
+SchemaConfigPtr HistogramBinSchema::getConfig() const {
+    std::map<string, SchemaConfigPtr> rFieldsConfig;
+    for(map<string, SchemaPtr>::const_iterator r=rFields.begin(); r!=rFields.end(); ++r)
+        rFieldsConfig[r->first] = r->second->getConfig();
+    return makePtr<HistogramBinSchemaConfig>(rFieldsConfig);
+}
+
+/***********************************
+***** HistogramBinSchemaConfig *****
+************************************/
+HistogramBinSchemaConfig::HistogramBinSchemaConfig(const std::map<std::string, SchemaConfigPtr> &rFields, propertiesPtr props) :
+        SchemaConfig(setProperties(rFields, props)) { }
+
+propertiesPtr HistogramBinSchemaConfig::setProperties(const std::map<std::string, SchemaConfigPtr> &rFields, propertiesPtr props) {
+    if(!props) props = boost::make_shared<properties>();
+
+    map<string, string> pMap;
+    pMap["numFields"] = txt()<<rFields.size();
+
+    int i=0;
+    for(map<string, SchemaConfigPtr>::const_iterator f=rFields.begin(); f!=rFields.end(); ++f, ++i) {
+        assert(f->second->props);
+        // Record the name of each field
+        pMap[txt()<<"field_"<<i] = f->first;
+
+        // Add the Configuration of each field as a sub-tag of props
+        props->addSubProp(f->second->props);
+    }
+    props->add("HistogramBin", pMap);
+
+    return props;
+}
+
+/*******************************
+***** Histogram Schema *****
+********************************/
+
+
+HistogramSchema::HistogramSchema(){
+    //minmum range
+    min = makePtr<ScalarSchema>(ScalarSchema::doubleT);
+    //max range
+    max = makePtr<ScalarSchema>(ScalarSchema::doubleT);
+
+    //add key
+    key = makePtr<ScalarSchema>(ScalarSchema::stringT);
+    //add value
+    value = makePtr<HistogramBinSchema>();
+
+}
+
+/*
+*  [|Histogram numProperties="0"][Features numProperties="0"][min]...[/min][max]...[/max][key]...[/key][val]...[/val][/Histogram]
+*
+* */
+
+HistogramSchema::HistogramSchema(properties::iterator props){
+    //key value schemas will be created by 'KeyValSchema(props.next())'
+    //create min/max scehemas and key value schemas here
+    assert(props.next().name()=="Features");
+    assert(props.next().getContents().size() == 4);
+
+    //get tag properties
+    list<propertiesPtr>::const_iterator minIt = props.next().getContents().begin();
+    list<propertiesPtr>::const_iterator maxIt = minIt; ++maxIt;
+    list<propertiesPtr>::const_iterator keyIt = maxIt; ++keyIt;
+    list<propertiesPtr>::const_iterator valIt = keyIt; ++valIt;
+
+    //create type scehmas
+    min   = SchemaRegistry::create(*minIt);
+    max   = SchemaRegistry::create(*maxIt);
+    key   = SchemaRegistry::create(*keyIt);
+    value = SchemaRegistry::create(*valIt);
+}
+
+SchemaPtr HistogramSchema::create(properties::iterator props){
+    assert(props.name()=="Histogram");
+    return makePtr<HistogramSchema>(props);
+}
+
+void HistogramSchema::serialize(DataPtr obj_arg, FILE* out) const{
+    HistogramPtr obj = dynamicPtrCast<Histogram>(obj_arg);
+    if(!obj) { cerr << "ERROR: HistogramSchema::serialize() is provided incompatible object "<<obj_arg->str(cerr, shared_from_this())<<"!"; assert(0); }
+
+    //first serialize min and max types
+    DataPtr minData = obj->getMin();
+    min->serialize(minData, out);
+    DataPtr maxData = obj->getMax();
+    max->serialize(maxData, out);
+
+    // Write out the number of key mappings we'll emit
+    unsigned int numKeys = obj->getDataMod().size();
+    fwrite(&numKeys, sizeof(unsigned int), 1, out);
+
+    // Iterate through each key->value mapping in obj
+    for(std::map<DataPtr, std::list<DataPtr> >::const_iterator i=obj->getDataMod().begin(); i!=obj->getDataMod().end(); i++) {
+        // Serialize the current key
+        key->serialize(i->first, out);
+
+        // Serialize all the values mapped to this key
+
+        // First, the number of values
+        unsigned int numValues = i->second.size();
+        fwrite(&numValues, sizeof(unsigned int), 1, out);
+
+        // The the values themselves
+        for(std::list<DataPtr>::const_iterator j=i->second.begin(); j!=i->second.end(); j++) {
+            //cout << "valueSchema="; value->str(cout); cout << endl;
+            value->serialize(*j, out);
+        }
+    }
+}
+
+void HistogramSchema::serialize(DataPtr obj_arg, StreamBuffer * buffer) const{
+    HistogramPtr obj = dynamicPtrCast<Histogram>(obj_arg);
+    if(!obj) { cerr << "ERROR: ExplicitKeyValSchema::serialize() is provided incompatible object "<<obj_arg->str(cerr, shared_from_this())<<"!"; assert(0); }
+
+    //first serialize min and max types
+    DataPtr minData = obj->getMin();
+    min->serialize(minData, buffer);
+    DataPtr maxData = obj->getMax();
+    max->serialize(maxData, buffer);
+
+    // Write out the number of key mappings we'll emit
+    unsigned int numKeys = obj->getData().size();
+//    fwrite(&numKeys, sizeof(unsigned int), 1, out);
+    int total_written = bufwrite(&numKeys,sizeof(unsigned int), buffer);
+//    printf("Schema::ExplicitKeyValSchema bufwrite numkeys... total_written : %d \n", total_written);
+
+    // Iterate through each key->value mapping in obj
+    for(std::map<DataPtr, std::list<DataPtr> >::const_iterator i=obj->getData().begin(); i!=obj->getData().end(); i++) {
+        // Serialize the current key
+        key->serialize(i->first, buffer);
+
+        // Serialize all the values mapped to this key
+
+        // First, the number of values
+        unsigned int numValues = i->second.size();
+//        fwrite(&numValues, sizeof(unsigned int), 1, out);
+        bufwrite(&numValues,sizeof(unsigned int), buffer);
+
+        // The the values themselves
+        for(std::list<DataPtr>::const_iterator j=i->second.begin(); j!=i->second.end(); j++) {
+            //cout << "valueSchema="; value->str(cout); cout << endl;
+            value->serialize(*j, buffer);
+        }
+    }
+}
+
+DataPtr HistogramSchema::deserialize(FILE* in) const{
+    HistogramPtr histo = makePtr<Histogram>();
+    map<DataPtr, list<DataPtr> >& data = histo->getDataMod();
+
+    //deserialize min/max range
+    DataPtr minData = min->deserialize(in);
+    DataPtr maxData = max->deserialize(in);
+    histo->setMin(minData);
+    histo->setMax(maxData);
+    // Read the number of keys
+    unsigned int numKeys;
+    fread(&numKeys, sizeof(unsigned int), 1, in);
+
+    // Load that number of Keys
+    for(unsigned int k=0; k<numKeys; ++k) {
+        // Load the key itself
+        DataPtr keyD = key->deserialize(in);
+
+        pair<map<DataPtr, list<DataPtr> >::iterator, bool> keyLoc = data.insert(make_pair(keyD, list<DataPtr>()));
+
+        //always key:bin = 1:1
+        DataPtr valueD = value->deserialize(in);
+        keyLoc.first->second.push_back(valueD);
+
+    }
+
+    return histo;
+}
+
+
+DataPtr  HistogramSchema::deserialize(StreamBuffer * in) const{
+    HistogramPtr histo = makePtr<Histogram>();
+    map<DataPtr, list<DataPtr> >& data = histo->getDataMod();
+
+    int ret ;
+    //deserialize min/max range
+    DataPtr minData = min->deserialize(in);
+    DataPtr maxData = max->deserialize(in);
+    histo->setMin(minData);
+    histo->setMax(maxData);
+
+    // Read the number of keys
+    unsigned int numKeys;
+
+    ret = bufread(&numKeys, sizeof(unsigned int), in);
+
+    if(ret == -1) return NULLData;
+
+    // Load that number of Keys
+    for(unsigned int k=0; k<numKeys; ++k) {
+        // Load the key itself
+        DataPtr keyD = key->deserialize(in);
+
+        pair<map<DataPtr, list<DataPtr> >::iterator, bool> keyLoc = data.insert(make_pair(keyD, list<DataPtr>()));
+
+        // Read the number of values mapped to this key
+        //always key:bin = 1:1
+        DataPtr valueD = value->deserialize(in);
+        keyLoc.first->second.push_back(valueD);
+    }
+
+    return histo;
+
+}
+
+std::ostream& HistogramSchema::str(std::ostream& out) const{
+    out << "[HistogramSchema: " << endl;
+    out << "    [HistogramFeaturesSchema: "<<endl;
+    out << "        min=";   min->str(out);   out << endl;
+    out << "        max=";   max->str(out);   out << endl;
+    out << "        key=";   key->str(out);   out << endl;
+    out << "        value="; value->str(out); out << " ]" << endl;
+    out << "]" << endl;
+    return out;
+}
+
+SchemaConfigPtr HistogramSchema::getConfig() const{
+    return makePtr<ExplicitKeyValSchemaConfig>(key->getConfig(), value->getConfig());
+}
+
+
+/**********************************
+***** Histogram Config Schema *****
+***********************************/
+
+HistogramSchemaConfig::HistogramSchemaConfig(const std::map<std::string, SchemaConfigPtr> &rFields, propertiesPtr props){
+
+
+}
+
+propertiesPtr HistogramSchemaConfig::setProperties(const std::map<std::string, SchemaConfigPtr> &rFields, propertiesPtr props){
+
 }
