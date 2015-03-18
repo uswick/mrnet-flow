@@ -255,7 +255,7 @@ class SynchOperator: public Operator {
   
   public:
   // Called by an incoming Stream to communicate the given Data object
-  void recv(unsigned int inStreamIdx, DataPtr obj);
+  virtual void recv(unsigned int inStreamIdx, DataPtr obj);
   
   private:
   // Records whether any of the incoming streams have finished sending data
@@ -788,5 +788,71 @@ public:
     InMemorySourceOperatorConfig(unsigned int ID, unsigned int type, int iters, int rnd_min, int rnd_max, SchemaConfigPtr schemaCfg, propertiesPtr props=NULLProperties);
 
     static propertiesPtr setProperties(unsigned int type, int iters, int rnd_min, int rnd_max, SchemaConfigPtr schemaCfg, propertiesPtr props);
+
+};
+
+
+
+
+class SynchedHistogramJoinOperator : public SynchOperator {
+private:
+
+    //perofrm histogram aggregaion on 'synch_interval' number of data has arrived
+    int synch_interval;
+
+    // The schema of the key->value mappings that will be input and emitted by this operato
+    HistogramSchemaPtr schema;
+    //buffer queue that will keep data
+    std::vector<DataPtr> dataBuffer;
+
+    DataPtr outputHistogram;
+
+public:
+    SynchedHistogramJoinOperator(unsigned int numInputs, unsigned int ID, int interval);
+
+    // Loads the Operator from its serialized representation
+    SynchedHistogramJoinOperator(properties::iterator props);
+
+    // Creates an instance of the Operator from its serialized representation
+    static OperatorPtr create(properties::iterator props);
+
+    virtual void inStreamsFinished();
+
+    ~SynchedHistogramJoinOperator();
+
+    void recv(unsigned int inStreamIdx, DataPtr obj);
+
+    // Called to signal that all the incoming streams have been connected. Returns the schemas
+    // of the outgoing streams based on the schemas of the incoming streams.
+    std::vector<SchemaPtr> inConnectionsComplete();
+
+    // Called when a record arrives on all the incoming streams (synched by parent operator).
+    // inData: holds the Data object from each stream.
+    // This function may send Data objects on some of the outgoing streams.
+    void work(const std::vector<DataPtr>& inData);
+
+    // Write a human-readable string representation of this Operator to the given output stream
+    std::ostream& str(std::ostream& out) const;
+};
+
+
+
+/*****************************************
+* SynchedHistogramJoin config
+*****************************************/
+
+/*
+[|SynchedHistogramJoin numProperties="1" name0="sync_interval" val0="..."    ]
+[Operator numProperties="3" name0="ID" val0="0" name1="numInputs" val1="1" name2="numOutputs" val2="1"]
+
+[/SynchedHistogramJoin]
+
+*/
+
+class SynchedHistogramJoin: public OperatorConfig {
+public:
+    SynchedHistogramJoin(unsigned int ID, int interval, propertiesPtr props=NULLProperties);
+
+    static propertiesPtr setProperties(int interval, propertiesPtr props);
 
 };

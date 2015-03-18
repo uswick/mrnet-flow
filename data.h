@@ -562,6 +562,8 @@ public:
     //  a.2 else perform aggregate 'value' bin with the existing bin
     void aggregateBin(const DataPtr& key, const DataPtr& value);
 
+    void join(HistogramPtr& other);
+
     // Return whether this object is identical to that object
     // that must have a name that is compatible with this
     bool operator==(const DataPtr& that_arg) const;

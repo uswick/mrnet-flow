@@ -772,8 +772,6 @@ bool  Histogram::operator<(const DataPtr& that_arg) const{
 //  a.1 if not found then insert Bin
 //  a.2 else perform aggregate 'value' bin with the existing bin
 void Histogram::aggregateBin(const DataPtr& key, const DataPtr& value){
-    HistogramBinPtr newBin = dynamicPtrCast<HistogramBin>(value);
-
     if(data.find(key) == data.end()) {
         //first time
         data[key] = list<DataPtr>();
@@ -785,6 +783,23 @@ void Histogram::aggregateBin(const DataPtr& key, const DataPtr& value){
         HistogramBinPtr binForKey = dynamicPtrCast<HistogramBin>(dataForKey);
         //merge with new bin
         binForKey->merge(value);
+    }
+
+}
+
+void Histogram::join(HistogramPtr& other){
+    //for each key->bin in the other histogram
+    //do a join based on key
+    std::map<DataPtr, std::list<DataPtr> >::iterator keyBinIt = other->getDataMod().begin();
+    for(; keyBinIt != other->getDataMod().end() ; keyBinIt++){
+        DataPtr key = keyBinIt->first;
+        list<DataPtr> value = keyBinIt->second;
+        list<DataPtr>::iterator valueIt = value.begin();
+        //for each in the list (ideally only one Histogrambin exist per key )
+        for(; valueIt != value.end() ; valueIt++){
+            aggregateBin(key, *valueIt);
+        }
+        //for each value aggregate bins
     }
 
 }

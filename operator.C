@@ -914,6 +914,10 @@ void SynchedRecordJoinOperator::work(const std::vector<DataPtr>& inData) {
         }
     }
 
+    //send data upstream
+    assert(outStreams.size()==1);
+    outStreams[0]->transfer(outputHisto);
+
 
 }
 
@@ -1120,4 +1124,121 @@ propertiesPtr InMemorySourceOperatorConfig::setProperties(unsigned int type, int
 
 }
 
+/**************************************
+***** SynchedHistogramJoinOperator   **
+**************************************/
+
+SynchedHistogramJoinOperator::SynchedHistogramJoinOperator(unsigned int numInputs, unsigned int ID, int interval):
+        SynchOperator(numInputs, /*numOutputs*/ 1, ID){
+    synch_interval = interval;
+}
+
+// Loads the Operator from its serialized representation
+SynchedHistogramJoinOperator::SynchedHistogramJoinOperator(properties::iterator props):SynchOperator(props.next()){
+    char* str_interval = (char *) props.get("interval").c_str();
+    assert(str_interval);
+
+    //initilaize settings
+    synch_interval = std::stod(str_interval);
+}
+
+// Creates an instance of the Operator from its serialized representation
+OperatorPtr SynchedHistogramJoinOperator::create(properties::iterator props){
+    assert(props.name()=="SynchedHistogramJoin");
+    return makePtr<SynchedHistogramJoinOperator>(props);
+}
+
+SynchedHistogramJoinOperator::~SynchedHistogramJoinOperator(){}
+
+void SynchedHistogramJoinOperator::recv(unsigned int inStreamIdx, DataPtr obj){
+    //push incoming data to buffer
+    dataBuffer.push_back(obj);
+
+    //check if number of incoming data objects exceed 'synch_interval'
+    if(dataBuffer.size() == synch_interval){
+        work(dataBuffer);
+        dataBuffer.clear();
+    }
+}
+
+// Called to signal that all the incoming streams have been connected. Returns the schemas
+// of the outgoing streams based on the schemas of the incoming streams.
+std::vector<SchemaPtr> SynchedHistogramJoinOperator::inConnectionsComplete(){
+    assert(inStreams.size()>0);
+    vector<StreamPtr>::iterator in=inStreams.begin();
+    for(; in!=inStreams.end(); ++in) {
+
+        if(in==inStreams.begin()) {
+            //all incoming streams for this is record type schemas
+            schema = dynamicPtrCast<HistogramSchema>((*in)->getSchema());
+            if(!schema) { cerr << "ERROR: SynchedHistogramJoin requires incoming streams to have a HistogramSchema. Actual schema is "; (*in)->getSchema()->str(cerr); cerr<<endl; assert(0); }
+        } else if(schema != dynamicPtrCast<HistogramSchema>((*in)->getSchema())) {
+            cerr << "ERROR: SynchedHistogramJoin requires that all incoming streams use the same schema but there is an inconsistency!"<<endl;
+            cerr << "Incoming stream schemas:"<<endl;
+            for(int i=0; i<inStreams.size(); ++i)
+            { cerr << "    "<<i<<": "; (*in)->getSchema()->str(cerr); cerr << endl; }
+        }
+    }
+    vector<SchemaPtr> ret;
+    ret.push_back(schema);
+    return ret;
+}
+
+
+void SynchedHistogramJoinOperator::work(const std::vector<DataPtr>& inData){
+    HistogramPtr outHistogram = dynamicPtrCast<Histogram>(outputHistogram);
+    //start aggregating data
+    std::vector<DataPtr>::const_iterator bufferIt = inData.begin();
+    for(; bufferIt != inData.end() ; bufferIt++){
+        HistogramPtr curr_h = dynamicPtrCast<Histogram>(*bufferIt);
+        outHistogram->join(curr_h);
+    }
+
+}
+
+void SynchedHistogramJoinOperator::inStreamsFinished(){
+    //check if any histograms left in buffer
+    if(dataBuffer.size() > 0){
+        //if we have anything left join them
+        HistogramPtr outHistogram = dynamicPtrCast<Histogram>(outputHistogram);
+        //start aggregating data
+        std::vector<DataPtr>::const_iterator bufferIt = dataBuffer.begin();
+        for(; bufferIt != dataBuffer.end() ; bufferIt++){
+            HistogramPtr curr_h = dynamicPtrCast<Histogram>(*bufferIt);
+            outHistogram->join(curr_h);
+        }
+    }
+
+    if(outStreams.size() > 0){
+        outStreams[0]->streamFinished();
+    }
+}
+
+// Write a human-readable string representation of this Operator to the given output stream
+std::ostream& SynchedHistogramJoinOperator::str(std::ostream& out) const {
+    out << "[SynchedHistogramJoinOperator: schema="; schema->str(out); out << "]";
+    return out;
+}
+
+/*****************************************
+* SynchedHistogramJoinOperator Config
+*****************************************/
+
+SynchedHistogramJoin::SynchedHistogramJoin(unsigned int ID, int interval, propertiesPtr props):
+        OperatorConfig(/*numInputs*/ 1, /*numOutputs*/ 1, ID, setProperties(interval, props)){
+
+}
+
+propertiesPtr SynchedHistogramJoin::setProperties(int interval, propertiesPtr props){
+    if(!props) props = boost::make_shared<properties>();
+
+
+    map<string, string> pMap;
+    pMap["interval"]  = std::to_string(interval);
+
+    props->add("SynchedHistogramJoin", pMap);
+
+    return props;
+
+}
 
