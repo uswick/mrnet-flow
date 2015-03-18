@@ -100,26 +100,29 @@ apps/histogram/filter.so: filter.C mrnet_operator.o apps/histogram/filter_init.o
 #build app tests
 #currently tests are only for histogram app
 #############################################################
-TESTS={apps/histogram/tests/histogram_aggregate_test apps/histogram/tests/histogram_properties_test}
-TEST_OBJS={ apps/histogram/tests/flow_test.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o}
+TESTS= apps/histogram/tests/histogram_aggregate_test apps/histogram/tests/histogram_properties_test
+TEST_OBJS = apps/histogram/tests/flow_test.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
 
 .PHONY: tests
 tests: apps/histogram/tests/flow_test.o apps/histogram/tests/histogram_aggregate_test apps/histogram/tests/histogram_properties_test
+	@echo "\n\n************************************\n***            TESTS             ***\n************************************\n"
+	for T in ${TESTS}; do  $$T ; done
 
-apps/histogram/tests/flow_test.o: mrnet_operator.h mrnet_flow.h data.h schema.h operator.h apps/histogram/tests/flow_test.h
+apps/histogram/tests/flow_test.o: apps/histogram/tests/flow_test.C mrnet_operator.h mrnet_flow.h data.h schema.h operator.h apps/histogram/tests/flow_test.h
 	${CXX} ${TEST_CXXFLAGS} ${MRNET_CXXFLAGS} -I./ apps/histogram/tests/flow_test.C -c -o apps/histogram/tests/flow_test.o
 
 
-apps/histogram/tests/histogram_aggregate_test: apps/histogram/tests/flow_test.o apps/histogram/tests/histogram_aggregate_test.C mrnet_operator.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
-	${CXX} ${TEST_CXXFLAGS} ${MRNET_CXXFLAGS} -I./ apps/histogram/tests/histogram_aggregate_test.C  apps/histogram/tests/flow_test.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram/tests/histogram_aggregate_test ${MRNET_LIBS}
+apps/histogram/tests/histogram_aggregate_test: apps/histogram/tests/histogram_aggregate_test.C *.h schema.o ${TEST_OBJS}
+	${CXX} ${TEST_CXXFLAGS} ${MRNET_CXXFLAGS} -I./ apps/histogram/tests/histogram_aggregate_test.C ${TEST_OBJS} -o apps/histogram/tests/histogram_aggregate_test ${MRNET_LIBS}
 
 
-apps/histogram/tests/histogram_properties_test: apps/histogram/tests/flow_test.o apps/histogram/tests/histogram_properties_test.C mrnet_operator.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
-	${CXX} ${TEST_CXXFLAGS} ${MRNET_CXXFLAGS} -I./ apps/histogram/tests/histogram_properties_test.C apps/histogram/tests/flow_test.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram/tests/histogram_properties_test ${MRNET_LIBS}
+apps/histogram/tests/histogram_properties_test: apps/histogram/tests/histogram_properties_test.C *.h schema.o ${TEST_OBJS}
+	${CXX} ${TEST_CXXFLAGS} ${MRNET_CXXFLAGS} -I./ apps/histogram/tests/histogram_properties_test.C ${TEST_OBJS} -o apps/histogram/tests/histogram_properties_test ${MRNET_LIBS}
+
 
 #############################################################
 # end of tests
 # ############################################################
 
 clean:
-	rm -f *.o dataTest front backend filter.so simple_topgen apps/histogram/*.o apps/histogram/front apps/histogram/filter.so apps/histogram/backend apps/histogram/tests/*.o
+	rm -f *.o dataTest front backend filter.so simple_topgen apps/histogram/*.o apps/histogram/front apps/histogram/filter.so apps/histogram/backend apps/histogram/tests/*.o ${TESTS}
