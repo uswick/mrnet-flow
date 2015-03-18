@@ -808,10 +808,13 @@ private:
     DataPtr outputHistogram;
 
 public:
+
     SynchedHistogramJoinOperator(unsigned int numInputs, unsigned int ID, int interval);
 
     // Loads the Operator from its serialized representation
     SynchedHistogramJoinOperator(properties::iterator props);
+
+    void init(int);
 
     // Creates an instance of the Operator from its serialized representation
     static OperatorPtr create(properties::iterator props);

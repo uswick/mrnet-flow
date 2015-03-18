@@ -715,6 +715,11 @@ Histogram::Histogram(){
 
 }
 
+//histogram is not initialized if min/max values are not set !!
+bool Histogram::isInitialized(){
+    return minValue.get() != NULL &&  maxValue.get() != NULL ;
+}
+
 void Histogram::setMin(DataPtr& min){
     minValue = min ;
 }

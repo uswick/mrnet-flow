@@ -1130,7 +1130,7 @@ propertiesPtr InMemorySourceOperatorConfig::setProperties(unsigned int type, int
 
 SynchedHistogramJoinOperator::SynchedHistogramJoinOperator(unsigned int numInputs, unsigned int ID, int interval):
         SynchOperator(numInputs, /*numOutputs*/ 1, ID){
-    synch_interval = interval;
+    init(interval);
 }
 
 // Loads the Operator from its serialized representation
@@ -1139,13 +1139,18 @@ SynchedHistogramJoinOperator::SynchedHistogramJoinOperator(properties::iterator 
     assert(str_interval);
 
     //initilaize settings
-    synch_interval = std::stod(str_interval);
+    init(std::stod(str_interval));
 }
 
 // Creates an instance of the Operator from its serialized representation
 OperatorPtr SynchedHistogramJoinOperator::create(properties::iterator props){
     assert(props.name()=="SynchedHistogramJoin");
     return makePtr<SynchedHistogramJoinOperator>(props);
+}
+
+void SynchedHistogramJoinOperator::init(int interval){
+    synch_interval = interval;
+    outputHistogram = makePtr<Histogram>();
 }
 
 SynchedHistogramJoinOperator::~SynchedHistogramJoinOperator(){}

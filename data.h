@@ -542,8 +542,12 @@ class Histogram : public Data {
     DataPtr minValue;
     DataPtr maxValue;
 
+
 public:
     Histogram();
+
+    //histogram is not initialized if min/max values are not set !!
+    bool isInitialized();
 
     void setMin(DataPtr& min);
     void setMax(DataPtr& min);
