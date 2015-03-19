@@ -484,7 +484,9 @@ public:
     DataPtr end ;
     HistogramBin(ConstHistogramBinSchemaPtr schema);
     HistogramBin();
+    HistogramBin(DataPtr start, DataPtr end, DataPtr count);
 
+    bool isInitialized() const;
     //accessor functions
     DataPtr getCount(){ return count ;}
     DataPtr getStartPos(){ return start ;}

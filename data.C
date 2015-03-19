@@ -608,7 +608,18 @@ HistogramBin::HistogramBin(ConstHistogramBinSchemaPtr schema) {
 HistogramBin::HistogramBin() {
 }
 
+HistogramBin::HistogramBin(DataPtr start, DataPtr end, DataPtr count){
+    this->start = start ;
+    this->end = end ;
+    this->count = count ;
+}
+
+bool HistogramBin::isInitialized() const{
+    return start.get() != NULL &&  end.get() != NULL && count.get() != NULL ;
+}
+
 void HistogramBin::merge (const DataPtr& that_arg){
+    assert(isInitialized());
     HistogramBinPtr that = dynamicPtrCast<HistogramBin>(that_arg);
     if(that->start == start && that->end == end){
         //get scalar pointer for this obj
@@ -617,13 +628,15 @@ void HistogramBin::merge (const DataPtr& that_arg){
         countScalar->merge(that->count);
     }else {
         cerr << "HistogramBin::merge() ERROR: can't applying merging to incompatible ranges : [" <<
-                that->start << " : " << start << "] [" <<
-                that->end << " : " << end << "] "<<endl; assert(0);
+                dynamicPtrCast<Scalar<double> >(that->start)->get() << " : " << dynamicPtrCast<Scalar<double> >(start)->get()
+                << "] [" << dynamicPtrCast<Scalar<double> >(that->end)->get() << " : "
+                << dynamicPtrCast<Scalar<double> >(end)->get() << "] "<<endl; assert(0);
     }
 }
 
 void HistogramBin::update(int countValue){
     assert(countValue >= 0);
+    assert(isInitialized());
     //get scalar pointer for this obj
     SharedPtr<Scalar<int> > countScalar = dynamicPtrCast<Scalar<int> >(count);
     SharedPtr<Scalar<int> > newCount = makePtr<Scalar<int> >(countValue);
@@ -651,6 +664,7 @@ void HistogramBin::add(const std::string& label, DataPtr obj, const ConstHistogr
 // NULLDataPtr if this field does not exist.
 DataPtr HistogramBin::get(const std::string& label, const ConstHistogramBinSchemaPtr schema) const {
     assert(schema->schemaFinalized);
+    assert(isInitialized());
     if(label == schema->field_start ){
         return start ;
     }else if (label == schema->field_count) {
@@ -693,7 +707,7 @@ void HistogramBin::getName(std::list<std::string>& name) const {
 std::ostream& HistogramBin::str(std::ostream& out, ConstSchemaPtr schema_arg) const {
     ConstHistogramBinSchemaPtr schema = dynamicPtrCast<const HistogramBinSchema>(schema_arg);
 
-    out << "[HistogramBin: bins="<<endl;
+    out << "[HistogramBin: "<<endl;
     std::map<std::string, SchemaPtr> fields;
 //    SchemaPtr sch = fields["start"];
     ConstSchemaPtr sch_start = staticConstPtrCast<Schema>(schema->rFields.find(schema->field_start)->second);
@@ -826,7 +840,7 @@ std::ostream& Histogram::str(std::ostream& out, ConstSchemaPtr schema_arg) const
     out << "    Max: "; maxValue->str(out, schema->max); out<<": "<<endl;
 
     for(std::map<DataPtr, list<DataPtr> >::const_iterator key=data.begin(); key!=data.end(); key++) {
-        out << "    "; key->first->str(out, schema->key); out<<": "<<endl;
+        out << "    Coloumn: "; key->first->str(out, schema->key); out<<": "<<endl;
         for(list<DataPtr>::const_iterator value=key->second.begin(); value!=key->second.end(); value++) {
             out << "        "; (*value)->str(out, schema->value); out << endl;
         }

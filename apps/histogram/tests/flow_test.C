@@ -33,8 +33,9 @@ void runTests(string lbl){
     for(; testIt != testRegistry.end(); testIt++){
         current_test = testIt->first;
         //run a test
-        (testIt->second)();
-        testSuccess();
+        bool ret = (testIt->second)();
+        if(ret)
+            testSuccess();
     }
     cout << "[End of Test Suite : { " << lbl << " }  success !! ]" << endl;
 
