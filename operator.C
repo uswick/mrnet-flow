@@ -860,9 +860,11 @@ void SynchedRecordJoinOperator::work(const std::vector<DataPtr>& inData) {
     SharedPtr<Scalar<double> > min = makePtr<Scalar<double> >(range_start);
     SharedPtr<Scalar<double> > max = makePtr<Scalar<double> >(range_stop);
 
-    cout << "range start : " << range_start << " stop : " << range_stop <<   " bin width : " << bin_width << " data size : " << inData.size() << endl;
-    DataPtr minDataptr = dynamicPtrCast<Data>(min);
-    DataPtr maxDataptr = dynamicPtrCast<Data>(max);
+#ifdef VERBOSE
+    cout << "[SynchedRecordJoinOperator] range start : " << range_start << " stop : " << range_stop <<   " bin width : " << bin_width << " data size : " << inData.size() << endl;
+#endif
+    DataPtr minDataptr = makePtr<Scalar<double> >(min->get());
+    DataPtr maxDataptr = makePtr<Scalar<double> >(max->get());
     outputHisto->setMin(minDataptr) ;
     outputHisto->setMax(maxDataptr) ;
 
@@ -872,10 +874,12 @@ void SynchedRecordJoinOperator::work(const std::vector<DataPtr>& inData) {
     //create a map of
 //    vector<HistogramBinPtr> histBins ;
 //    histBins.reserve(num_bins);
+
+    //create bins for outgoing Histogram
     for(double i = range_start ; i < range_stop ; i += bin_width){
         double bin_start = i ;
         double bin_stop ;
-        if(i + bin_width <= range_stop){
+        if(i + bin_width >= range_stop){
             //this is the last bin
             bin_stop = range_stop;
         }else{
@@ -931,6 +935,10 @@ void SynchedRecordJoinOperator::work(const std::vector<DataPtr>& inData) {
         }
     }
 
+    #ifdef VERBOSE
+    cout << "[SynchedRecordJoinOperator] histogram str ==> : " << endl       ;
+    outputHisto->str(cout, outputHistogramSchema);
+    #endif
     //send data upstream
     assert(outStreams.size()==1);
     outStreams[0]->transfer(outputHisto);
@@ -999,11 +1007,11 @@ list<DataPtr>& InMemorySourceOperator::RandomNumberGenerator<NumType>::produce()
 
         rec->add(recFieldsIt->first, rand_num_data, parent.schema);
     }
-//    #ifdef VERBOSE
+    #ifdef VERBOSE
     printf("[InMemSourceRandomNumberGenerator]: data ready for out flow.. \n");
-//    rec->str(cout, parent.schema);
+    rec->str(cout, parent.schema);
     printf("\n---------------- \n\n");
-//    #endif
+    #endif
     //transfer data once done
     parent.outStreams[0]->transfer(rec);
 
@@ -1085,9 +1093,9 @@ void InMemorySourceOperator::outConnectionsComplete() {}
 // will be done automatically by the SourceOperator base class.
 void InMemorySourceOperator::work() {
     assert(outStreams.size()==1);
-//    #ifdef VERBOSE
+    #ifdef VERBOSE
     printf("[InMemSourceOperator]: start.. [iters : %d ] [ rnd_min : %d] [ rnd_max : %d] \n", maxIters, rnd_min, rnd_max);
-//    #endif
+    #endif
 
     int it = 0 ;
     SourceProvider* externalSource;
@@ -1182,7 +1190,9 @@ void SynchedHistogramJoinOperator::init(int interval){
 SynchedHistogramJoinOperator::~SynchedHistogramJoinOperator(){}
 
 void SynchedHistogramJoinOperator::recv(unsigned int inStreamIdx, DataPtr obj){
+#ifdef VERBOSE
     cout << "[SynchedHistogramJoinOperator] recv data... " << endl ;
+#endif
     //lazy initialize out histogram with min/max ranges
     if(!output_initialized){
         HistogramPtr outHistogram = dynamicPtrCast<Histogram>(outputHistogram);
@@ -1237,13 +1247,14 @@ void SynchedHistogramJoinOperator::work(const std::vector<DataPtr>& inData){
         outHistogram->join(curr_h);
     }
 
-    //
+#ifdef VERBOSE
     cout << "[SynchedHistogramJoinOperator] work() joined schema : " << endl ;
     outHistogram->str(cout, schema);
+#endif
 }
 
 void SynchedHistogramJoinOperator::inStreamsFinished(){
-    cout << "[SynchedHistogramJoinOperator] streams finised : " << endl ;
+    cout << "[SynchedHistogramJoinOperator] streams waiting for sucessfull completion... " << endl ;
     //check if any histograms left in buffer
     if(dataBuffer.size() > 0){
         //if we have anything left join them
@@ -1254,9 +1265,10 @@ void SynchedHistogramJoinOperator::inStreamsFinished(){
             HistogramPtr curr_h = dynamicPtrCast<Histogram>(*bufferIt);
             outHistogram->join(curr_h);
         }
-        //
+#ifdef VERBOSE
         cout << "[inStreamsFinished] joined schema : " << endl ;
         outHistogram->str(cout, schema);
+#endif
         outStreams[0]->transfer(outputHistogram);
 
     }

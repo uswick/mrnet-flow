@@ -518,7 +518,9 @@ void MRNetFESourceOperator::work() {
 //        Schema::bufwrite(recv_Ar, length, &buf);
         Schema::bufwrite(recv_Ar, length, streamBuf);
         DataPtr data = schema->deserialize(streamBuf);
+#ifdef VERBOSE
         data->str(cout, schema);
+#endif
 
         if (data != NULLData) {
             #ifdef VERBOSE
