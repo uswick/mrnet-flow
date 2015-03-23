@@ -2,6 +2,7 @@
 #include "data.h"
 #include "schema.h"
 #include "operator.h"
+#include <time.h>
 
 using namespace std;
 
@@ -76,4 +77,14 @@ string get_property(string key){
     }
     return prop_app.begin().get(key);
 
+}
+
+static inline clock_t get_time(){
+    return clock();
+}
+
+static inline double get_elapsed(clock_t start_t, clock_t end_t){
+    double elapsed =  ((double) (end_t - start_t)) / CLOCKS_PER_SEC;
+    printf("\n\nTotal elapsed time : %f seconds\n", elapsed);
+    return elapsed;
 }

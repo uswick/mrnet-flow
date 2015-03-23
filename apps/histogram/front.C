@@ -294,7 +294,9 @@ int main(int argc, char** argv) {
     // Load the flow we previously wrote to the configuration file and run it.
     FILE* opConfig = fopen(opConfigFName, "r");
     FILEStructureParser parser(opConfig, 10000);
+    clock_t strt = get_time();
     map<unsigned int, SchemaPtr> outSchemas = runFlow(parser);
+    get_elapsed(strt, get_time());
     fclose(opConfig);
 
     // Show the data objects that got written to file "sink" by the flow
