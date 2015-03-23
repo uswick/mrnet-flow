@@ -286,7 +286,7 @@ int main(int argc, char** argv) {
     SchemaPtr fileSchema = getAggregate_Schema();
 
     // Create a Flow and write it out to a configuration file.
-    createSource2SinkFlowFront(opConfigFName, "sink", 10 , "top_file", "backend", "filter.so", fileSchema);
+    createSource2SinkFlowFront(opConfigFName, "sink", 2 , "top_file", "backend", "filter.so", fileSchema);
 
     // Load the flow we previously wrote to the configuration file and run it.
     FILE* opConfig = fopen(opConfigFName, "r");
