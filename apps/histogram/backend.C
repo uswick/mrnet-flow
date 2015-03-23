@@ -5,6 +5,7 @@
 #include "mrnet_flow.h"
 #include <iostream>
 #include <stdio.h>
+#include "app_common.h"
 
 using namespace std;
 
@@ -263,6 +264,12 @@ int main(int argc, char** argv) {
     BE_ARG_CNT = argc ;
     BE_ARGS = argv ;
 
+    //parse app.properties
+    int numFileds = atoi(get_property(KEY_ITEMS_PER_RECORD).c_str());
+    int min = atoi(get_property(KEY_SOURCE_MIN).c_str());
+    int max = atoi(get_property(KEY_SOURCE_MAX).c_str());
+    int iters = atoi(get_property(KEY_SOURCE_ITERATIONS).c_str());
+
     const char* opConfigFName="opconfig_backend";
 
     //unsigned int numStreams=3;
@@ -272,10 +279,10 @@ int main(int argc, char** argv) {
     registerDeserializersBackend();
 
     // The flows we'll run get their input data from a file, so initialize the file to hold some data
-    SchemaPtr fileSchema = getSchemaBackendNode(10);
+    SchemaPtr fileSchema = getSchemaBackendNode(numFileds);
 
     // Create a BE MRNet Flow
-    createSource2SinkFlowBackend(opConfigFName, 10, 150, 5, fileSchema);
+    createSource2SinkFlowBackend(opConfigFName, min, max, iters, fileSchema);
 
     // Load the flow we previously wrote to the configuration file and run it.
     FILE* opConfig = fopen(opConfigFName, "r");

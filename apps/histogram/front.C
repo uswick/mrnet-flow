@@ -5,6 +5,7 @@
 #include "mrnet_flow.h"
 #include <iostream>
 #include <stdio.h>
+#include "app_common.h"
 
 using namespace std;
 
@@ -276,6 +277,8 @@ void createSource2SinkFlowFront(const char *outFName, const char *sinkFName, int
 int main(int argc, char** argv) {
     const char* opConfigFName="opconfig_frontend";
     if(argc>1) opConfigFName = argv[1];
+    //parse app.properties
+    int sync_interval = atoi(get_property(KEY_SYNC_INTERVAL).c_str());
 
 //    unsigned int numStreams= get_num_streams();
 
@@ -286,7 +289,7 @@ int main(int argc, char** argv) {
     SchemaPtr fileSchema = getAggregate_Schema();
 
     // Create a Flow and write it out to a configuration file.
-    createSource2SinkFlowFront(opConfigFName, "sink", 2 , "top_file", "backend", "filter.so", fileSchema);
+    createSource2SinkFlowFront(opConfigFName, "sink", sync_interval , "top_file", "backend", "filter.so", fileSchema);
 
     // Load the flow we previously wrote to the configuration file and run it.
     FILE* opConfig = fopen(opConfigFName, "r");

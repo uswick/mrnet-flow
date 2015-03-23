@@ -9,7 +9,7 @@ MRNET_CXXFLAGS = -g -fPIC -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STD
         		-I${REPO_PATH}/include/xplat \
         		-I${REPO_PATH}/xplat/include \
                 -I${ROOT_PATH}/ \
-                    -Dos_linux
+                    -Dos_linux -std=c++11
 
 TEST_CXXFLAGS= -g  -Iapps/histogram/tests/ -std=c++11
 

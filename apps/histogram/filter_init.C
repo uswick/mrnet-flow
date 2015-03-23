@@ -2,6 +2,7 @@
 #include "filter_init.h"
 #include "mrnet_operator.h"
 #include "mrnet_flow.h"
+#include "app_common.h"
 
 //SharedPtr<SourceOperator> source_op;
 SharedPtr<MRNetFilterOutOperator> out_op_filter;
@@ -269,12 +270,14 @@ glst_t filter_flow_init(){
     // Create a Flow and write it out to a configuration file.
 //    createFilterSource2OutFlow(opConfigFName , fileSchema);
     double histogram_range_start, histogram_range_stop, histogram_col_width;
-    //random numbers are generated between 10 - 150
+
+    //parse app.properties
+    //default --> random numbers are generated between 10 - 150
     //hence lets 0 be start
-    histogram_range_start = 0 ;
-    histogram_range_stop = 150 ;
+    histogram_range_start = atof(get_property(KEY_HIST_START).c_str()) ;
+    histogram_range_stop = atof(get_property(KEY_HIST_STOP).c_str()) ;
     //lets collect coulumns of 10 width
-    histogram_col_width = 10;
+    histogram_col_width = atof(get_property(KEY_HIST_COL_WIDTH).c_str());
 
     createFilterSource2Join2OutFlow(opConfigFName, fileSchema,  get_num_streams(), histogram_range_start,
             histogram_range_stop, histogram_col_width);
