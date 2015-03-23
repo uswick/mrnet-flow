@@ -485,6 +485,7 @@ void MRNetFESourceOperator::work() {
         //if this is the Exit phase break from loop
         if (tag == FLOW_EXIT) {
             printf("[FE]: Recieved EXIT tag from MRNet Stream, moving into final phase..\n");
+            outStreams[0]->streamFinished();
             break;
         }
         //not the exit phase
@@ -517,6 +518,7 @@ void MRNetFESourceOperator::work() {
 //        Schema::bufwrite(recv_Ar, length, &buf);
         Schema::bufwrite(recv_Ar, length, streamBuf);
         DataPtr data = schema->deserialize(streamBuf);
+        data->str(cout, schema);
 
         if (data != NULLData) {
             #ifdef VERBOSE

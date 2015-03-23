@@ -15,11 +15,13 @@ char**  BE_ARGS = NULL ;
 static void registerDeserializersFront() {
     // Schemas
     SchemaRegistry::regCreator("Record", &RecordSchema::create);
+    SchemaRegistry::regCreator("Scalar", &ScalarSchema::create);
     SchemaRegistry::regCreator("Histogram",  &HistogramSchema::create);
     SchemaRegistry::regCreator("HistogramBin", &HistogramBinSchema::create);
 
     // Operators
     OperatorRegistry::regCreator("MRNetFrontSource",  &MRNetFESourceOperator::create);
+    OperatorRegistry::regCreator("SynchedHistogramJoin",  &SynchedHistogramJoinOperator::create);
     //create synch operator to aggregate Histograms
     OperatorRegistry::regCreator("OutFile", &OutFileOperator::create);
 }
@@ -226,7 +228,7 @@ std::map<unsigned int, SchemaPtr> runFlow(structureParser& parser) {
     return outSchemas;
 }
 
-void createSource2SinkFlowFront(const char *outFName, const char *sinkFName,
+void createSource2SinkFlowFront(const char *outFName, const char *sinkFName, int interval,
         const char *topFName, const char *beFName, const char *soFName,
         SchemaPtr schema) {
     ofstream out(outFName);
@@ -243,6 +245,10 @@ void createSource2SinkFlowFront(const char *outFName, const char *sinkFName,
         out << source.props->tagStr();
         ++opID;
 
+        SynchedHistogramJoinOperatorConfig histJoin(opID, 10);
+        out << histJoin.props->tagStr();
+        ++opID;
+
         OutFileOperatorConfig sink(opID, sinkFName);
         out << sink.props->tagStr();
 
@@ -255,8 +261,12 @@ void createSource2SinkFlowFront(const char *outFName, const char *sinkFName,
         out << streams.enterStr();
 
         // source:out:0 --> sink:in:0
-        StreamConfig source2scatter(opID, 0, opID+1, 0);
-        out << source2scatter.props.tagStr();
+        StreamConfig source2join(opID, 0, opID+1, 0);
+        out << source2join.props.tagStr();
+        ++opID;
+
+        StreamConfig join2sink(opID, 0, opID+1, 0);
+        out << join2sink.props.tagStr();
 
         out << streams.exitStr();
     }
@@ -276,7 +286,7 @@ int main(int argc, char** argv) {
     SchemaPtr fileSchema = getAggregate_Schema();
 
     // Create a Flow and write it out to a configuration file.
-    createSource2SinkFlowFront(opConfigFName, "sink", "top_file", "backend", "filter.so", fileSchema);
+    createSource2SinkFlowFront(opConfigFName, "sink", 10 , "top_file", "backend", "filter.so", fileSchema);
 
     // Load the flow we previously wrote to the configuration file and run it.
     FILE* opConfig = fopen(opConfigFName, "r");

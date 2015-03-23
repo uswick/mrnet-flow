@@ -17,9 +17,10 @@ class SharedPtr
   
   // Wraps a raw pointer of an object that has a dynamic copying method with a comparable shared pointer
   SharedPtr(Type* p) {
-    Type* c = dynamic_cast<Type*>(p->copy());
-    assert(c);
-    ptr = boost::shared_ptr<Type>(c);
+//    Type* c = dynamic_cast<Type*>(p->copy());
+//    Type* c = dynamic_cast<Type*>(p);
+//    assert(c);
+    ptr = boost::shared_ptr<Type>(p);
   }
     
   // Copy constructor

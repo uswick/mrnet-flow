@@ -100,11 +100,13 @@ apps/histogram/filter.so: filter.C mrnet_operator.o apps/histogram/filter_init.o
 #build app tests
 #currently tests are only for histogram app
 #############################################################
-TESTS= apps/histogram/tests/histogram_aggregate_test apps/histogram/tests/histogram_properties_test apps/histogram/tests/histogram_coloumn_properties_test
+TESTS= apps/histogram/tests/histogram_aggregate_test apps/histogram/tests/histogram_properties_test apps/histogram/tests/histogram_coloumn_properties_test apps/histogram/tests/record_join_operator_test apps/histogram/tests/histogram_serialization_test \
+apps/histogram/tests/histogram_coloumn_serialization_test
 TEST_OBJS = apps/histogram/tests/flow_test.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
 
 .PHONY: tests
-tests: apps/histogram/tests/flow_test.o apps/histogram/tests/histogram_aggregate_test apps/histogram/tests/histogram_properties_test apps/histogram/tests/histogram_coloumn_properties_test
+#tests: apps/histogram/tests/flow_test.o apps/histogram/tests/histogram_aggregate_test apps/histogram/tests/histogram_properties_test apps/histogram/tests/histogram_coloumn_properties_test
+tests: apps/histogram/tests/flow_test.o ${TESTS}
 	@echo "\n\n************************************\n***            TESTS             ***\n************************************\n"
 	for T in ${TESTS}; do  $$T ; done
 
@@ -121,6 +123,15 @@ apps/histogram/tests/histogram_properties_test: apps/histogram/tests/histogram_p
 
 apps/histogram/tests/histogram_coloumn_properties_test: apps/histogram/tests/histogram_coloumn_properties_test.C *.h schema.o ${TEST_OBJS}
 	${CXX} ${TEST_CXXFLAGS} ${MRNET_CXXFLAGS} -I./ apps/histogram/tests/histogram_coloumn_properties_test.C ${TEST_OBJS} -o apps/histogram/tests/histogram_coloumn_properties_test ${MRNET_LIBS}
+
+apps/histogram/tests/record_join_operator_test: apps/histogram/tests/record_join_operator_test.C *.h schema.o ${TEST_OBJS}
+	${CXX} ${TEST_CXXFLAGS} ${MRNET_CXXFLAGS} -I./ apps/histogram/tests/record_join_operator_test.C ${TEST_OBJS} -o apps/histogram/tests/record_join_operator_test ${MRNET_LIBS}
+
+apps/histogram/tests/histogram_serialization_test: apps/histogram/tests/histogram_serialization_test.C *.h schema.o ${TEST_OBJS}
+	${CXX} ${TEST_CXXFLAGS} ${MRNET_CXXFLAGS} -I./ apps/histogram/tests/histogram_serialization_test.C ${TEST_OBJS} -o apps/histogram/tests/histogram_serialization_test ${MRNET_LIBS}
+
+apps/histogram/tests/histogram_coloumn_serialization_test: apps/histogram/tests/histogram_coloumn_serialization_test.C *.h schema.o ${TEST_OBJS}
+	${CXX} ${TEST_CXXFLAGS} ${MRNET_CXXFLAGS} -I./ apps/histogram/tests/histogram_coloumn_serialization_test.C ${TEST_OBJS} -o apps/histogram/tests/histogram_coloumn_serialization_test ${MRNET_LIBS}
 
 #############################################################
 # end of tests

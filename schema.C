@@ -422,7 +422,6 @@ void RecordSchema::finalize() {
   for(map<string, SchemaPtr>::iterator f=rFields.begin(); f!=rFields.end(); ++f, ++i) {
     field2Idx[f->first] = i;
   }
-    
 
   schemaFinalized = true;
 }
@@ -441,8 +440,10 @@ unsigned int RecordSchema::getIdx(const std::string& label) const {
 
 //  printf("Record Schema : lbl : %s \n", label.c_str());
   /*cout << "#field2Idx="<<field2Idx.size()<<endl;
-  for(map<std::string, unsigned int>::const_iterator f=field2Idx.begin(); f!=field2Idx.end(); ++f)
-    cout << "    "<<f->first<<": "<<f->second<<endl;*/
+    */
+//  cout << "RecordSchema::getIdx lable : " << label << endl ;
+//  for(map<std::string, unsigned int>::const_iterator f=field2Idx.begin(); f!=field2Idx.end(); ++f)
+//    cout << "    "<<f->first<<": "<<f->second<<endl;
   
   map<string, unsigned int>::const_iterator i=field2Idx.find(label);
   assert(i!=field2Idx.end());
@@ -1342,7 +1343,7 @@ HistogramSchema::HistogramSchema(){
     max = makePtr<ScalarSchema>(ScalarSchema::doubleT);
 
     //add key
-    key = makePtr<ScalarSchema>(ScalarSchema::stringT);
+    key = makePtr<ScalarSchema>(ScalarSchema::doubleT);
     //add value
     value = makePtr<HistogramBinSchema>();
 
@@ -1398,10 +1399,6 @@ void HistogramSchema::serialize(DataPtr obj_arg, FILE* out) const{
 
         // Serialize all the values mapped to this key
 
-        // First, the number of values
-        unsigned int numValues = i->second.size();
-        fwrite(&numValues, sizeof(unsigned int), 1, out);
-
         // The the values themselves
         for(std::list<DataPtr>::const_iterator j=i->second.begin(); j!=i->second.end(); j++) {
             //cout << "valueSchema="; value->str(cout); cout << endl;
@@ -1435,8 +1432,7 @@ void HistogramSchema::serialize(DataPtr obj_arg, StreamBuffer * buffer) const{
 
         // First, the number of values
         unsigned int numValues = i->second.size();
-//        fwrite(&numValues, sizeof(unsigned int), 1, out);
-        bufwrite(&numValues,sizeof(unsigned int), buffer);
+//        cout << "HistogramSchema::serialize numValues : " << numValues << endl ;
 
         // The the values themselves
         for(std::list<DataPtr>::const_iterator j=i->second.begin(); j!=i->second.end(); j++) {
@@ -1523,7 +1519,7 @@ std::ostream& HistogramSchema::str(std::ostream& out) const{
 }
 
 SchemaConfigPtr HistogramSchema::getConfig() const{
-    return makePtr<ExplicitKeyValSchemaConfig>(key->getConfig(), value->getConfig());
+    return makePtr<HistogramSchemaConfig>(min->getConfig(), max->getConfig(), key->getConfig(), value->getConfig());
 }
 
 
@@ -1531,11 +1527,29 @@ SchemaConfigPtr HistogramSchema::getConfig() const{
 ***** Histogram Config Schema *****
 ***********************************/
 
-HistogramSchemaConfig::HistogramSchemaConfig(const std::map<std::string, SchemaConfigPtr> &rFields, propertiesPtr props){
+HistogramSchemaConfig::HistogramSchemaConfig(const SchemaConfigPtr& min, const SchemaConfigPtr& max,
+        const SchemaConfigPtr& key, const SchemaConfigPtr& value, propertiesPtr props):
+        SchemaConfig(setProperties(min , max , key, value, props)){
 
 
 }
 
-propertiesPtr HistogramSchemaConfig::setProperties(const std::map<std::string, SchemaConfigPtr> &rFields, propertiesPtr props){
+propertiesPtr HistogramSchemaConfig::setProperties(const SchemaConfigPtr& min, const SchemaConfigPtr& max,
+        const SchemaConfigPtr& key, const SchemaConfigPtr& value, propertiesPtr props){
+    if(!props) props = boost::make_shared<properties>();
+
+    map<string, string> pMap_head;
+    props->add("Histogram", pMap_head);
+
+    map<string, string> pMap;
+    props->add("Features", pMap);
+
+    // Add the Configuration of the key and value as a sub-tag of props
+    props->addSubProp(min->props);
+    props->addSubProp(max->props);
+    props->addSubProp(key->props);
+    props->addSubProp(value->props);
+
+    return props;
 
 }

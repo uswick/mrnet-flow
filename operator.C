@@ -792,7 +792,7 @@ SynchedRecordJoinOperator::SynchedRecordJoinOperator(properties::iterator props)
 // Creates an instance of the Operator from its serialized representation
 OperatorPtr SynchedRecordJoinOperator::create(properties::iterator props) {
     assert(props.name()=="SynchedRecordJoin");
-    return makePtr<SynchedKeyValJoinOperator>(props);
+    return makePtr<SynchedRecordJoinOperator>(props);
 }
 
 void SynchedRecordJoinOperator::inStreamsFinished() {
@@ -802,6 +802,15 @@ void SynchedRecordJoinOperator::inStreamsFinished() {
 }
 
 SynchedRecordJoinOperator::~SynchedRecordJoinOperator() {}
+
+void SynchedRecordJoinOperator::setInSchema(RecordSchemaPtr recSchmea){
+    schema = recSchmea;
+}
+
+//set output Schema for this operator
+void SynchedRecordJoinOperator::setOutSchema(HistogramSchemaPtr histoSchema){
+    outputHistogramSchema = histoSchema;
+}
 
 // Called to signal that all the incoming streams have been connected. Returns the schemas
 // of the outgoing streams based on the schemas of the incoming streams.
@@ -813,7 +822,8 @@ std::vector<SchemaPtr> SynchedRecordJoinOperator::inConnectionsComplete() {
 
         if(in==inStreams.begin()) {
             //all incoming streams for this is record type schemas
-            schema = dynamicPtrCast<RecordSchema>((*in)->getSchema());
+            setInSchema(dynamicPtrCast<RecordSchema>((*in)->getSchema()));
+//            schema = dynamicPtrCast<RecordSchema>((*in)->getSchema());
             if(!schema) { cerr << "ERROR: SynchedRecordJoin requires incoming streams to have a RecordSchema. Actual schema is "; (*in)->getSchema()->str(cerr); cerr<<endl; assert(0); }
         } else if(schema != dynamicPtrCast<RecordSchema>((*in)->getSchema())) {
             cerr << "ERROR: SynchedRecordJoin requires that all incoming streams use the same schema but there is an inconsistency!"<<endl;
@@ -824,7 +834,8 @@ std::vector<SchemaPtr> SynchedRecordJoinOperator::inConnectionsComplete() {
     }
 
     // Generate the schema for the output of this operator
-    outputHistogramSchema = makePtr<HistogramSchema>();
+    setOutSchema(makePtr<HistogramSchema>());
+//    outputHistogramSchema = makePtr<HistogramSchema>();
 
     // Now generate the schema for the single output stream
     vector<SchemaPtr> ret;
@@ -849,6 +860,7 @@ void SynchedRecordJoinOperator::work(const std::vector<DataPtr>& inData) {
     SharedPtr<Scalar<double> > min = makePtr<Scalar<double> >(range_start);
     SharedPtr<Scalar<double> > max = makePtr<Scalar<double> >(range_stop);
 
+    cout << "range start : " << range_start << " stop : " << range_stop <<   " bin width : " << bin_width << " data size : " << inData.size() << endl;
     DataPtr minDataptr = dynamicPtrCast<Data>(min);
     DataPtr maxDataptr = dynamicPtrCast<Data>(max);
     outputHisto->setMin(minDataptr) ;
@@ -890,11 +902,14 @@ void SynchedRecordJoinOperator::work(const std::vector<DataPtr>& inData) {
     map<DataPtr, std::list<DataPtr> >& histodataMap = outputHisto->getDataMod();
     std::vector<DataPtr>::const_iterator dataRecordsIt = inData.begin();
 
+    int i = 0 ;
+    int j = 0 ;
     for( ; dataRecordsIt != inData.end() ; dataRecordsIt++){
         RecordPtr recs = dynamicPtrCast<Record>(*dataRecordsIt);
         vector<DataPtr>::const_iterator recIt = recs->getFields().begin();
         //for each record get the scalar data
         //update bin count
+        j = 0 ;
         for(; recIt != recs->getFields().end(); recIt++){
             DataPtr p = *recIt ;
             SharedPtr<Scalar<double> > sVal_Data = dynamicPtrCast<Scalar<double> >(p);
@@ -902,15 +917,17 @@ void SynchedRecordJoinOperator::work(const std::vector<DataPtr>& inData) {
             //if this value is greater than some start key and less than some stop key
             //accept it to that particular bin
             // bin_i  s.t.  bin_i [E] BINS where { bin_start <= r < bin_stop }
-            int binPos = (int)ceil((sValue - range_start)/bin_width);
+            int binPos = (int)floor((sValue - range_start)/bin_width);
 
             //bin Key is the 'bin_start' value
-            double binKey = range_start + (binPos-1)*bin_width;
+            double binKey = range_start + (binPos)*bin_width;
             SharedPtr<Scalar<double> > binKeyData = makePtr<Scalar<double>>( binKey );
 
             //get the relevant bin and then update count by 1
             HistogramBinPtr binForKey = dynamicPtrCast<HistogramBin>(*histodataMap[binKeyData].begin());
             binForKey->update(1);
+            i++;
+            j++;
         }
     }
 
@@ -982,6 +999,11 @@ list<DataPtr>& InMemorySourceOperator::RandomNumberGenerator<NumType>::produce()
 
         rec->add(recFieldsIt->first, rand_num_data, parent.schema);
     }
+//    #ifdef VERBOSE
+    printf("[InMemSourceRandomNumberGenerator]: data ready for out flow.. \n");
+//    rec->str(cout, parent.schema);
+    printf("\n---------------- \n\n");
+//    #endif
     //transfer data once done
     parent.outStreams[0]->transfer(rec);
 
@@ -1063,6 +1085,9 @@ void InMemorySourceOperator::outConnectionsComplete() {}
 // will be done automatically by the SourceOperator base class.
 void InMemorySourceOperator::work() {
     assert(outStreams.size()==1);
+//    #ifdef VERBOSE
+    printf("[InMemSourceOperator]: start.. [iters : %d ] [ rnd_min : %d] [ rnd_max : %d] \n", maxIters, rnd_min, rnd_max);
+//    #endif
 
     int it = 0 ;
     SourceProvider* externalSource;
@@ -1151,11 +1176,24 @@ OperatorPtr SynchedHistogramJoinOperator::create(properties::iterator props){
 void SynchedHistogramJoinOperator::init(int interval){
     synch_interval = interval;
     outputHistogram = makePtr<Histogram>();
+    output_initialized = (dynamicPtrCast<Histogram>(outputHistogram))->isInitialized();
 }
 
 SynchedHistogramJoinOperator::~SynchedHistogramJoinOperator(){}
 
 void SynchedHistogramJoinOperator::recv(unsigned int inStreamIdx, DataPtr obj){
+    cout << "[SynchedHistogramJoinOperator] recv data... " << endl ;
+    //lazy initialize out histogram with min/max ranges
+    if(!output_initialized){
+        HistogramPtr outHistogram = dynamicPtrCast<Histogram>(outputHistogram);
+        HistogramPtr curr_h = dynamicPtrCast<Histogram>(obj);
+        outHistogram->setMin(curr_h->getMin());
+        outHistogram->setMax(curr_h->getMax());
+
+        //reset checker
+        output_initialized = outHistogram->isInitialized();
+    }
+
     //push incoming data to buffer
     dataBuffer.push_back(obj);
 
@@ -1199,9 +1237,13 @@ void SynchedHistogramJoinOperator::work(const std::vector<DataPtr>& inData){
         outHistogram->join(curr_h);
     }
 
+    //
+    cout << "[SynchedHistogramJoinOperator] work() joined schema : " << endl ;
+    outHistogram->str(cout, schema);
 }
 
 void SynchedHistogramJoinOperator::inStreamsFinished(){
+    cout << "[SynchedHistogramJoinOperator] streams finised : " << endl ;
     //check if any histograms left in buffer
     if(dataBuffer.size() > 0){
         //if we have anything left join them
@@ -1212,6 +1254,11 @@ void SynchedHistogramJoinOperator::inStreamsFinished(){
             HistogramPtr curr_h = dynamicPtrCast<Histogram>(*bufferIt);
             outHistogram->join(curr_h);
         }
+        //
+        cout << "[inStreamsFinished] joined schema : " << endl ;
+        outHistogram->str(cout, schema);
+        outStreams[0]->transfer(outputHistogram);
+
     }
 
     if(outStreams.size() > 0){
@@ -1229,12 +1276,12 @@ std::ostream& SynchedHistogramJoinOperator::str(std::ostream& out) const {
 * SynchedHistogramJoinOperator Config
 *****************************************/
 
-SynchedHistogramJoin::SynchedHistogramJoin(unsigned int ID, int interval, propertiesPtr props):
+SynchedHistogramJoinOperatorConfig::SynchedHistogramJoinOperatorConfig(unsigned int ID, int interval, propertiesPtr props):
         OperatorConfig(/*numInputs*/ 1, /*numOutputs*/ 1, ID, setProperties(interval, props)){
 
 }
 
-propertiesPtr SynchedHistogramJoin::setProperties(int interval, propertiesPtr props){
+propertiesPtr SynchedHistogramJoinOperatorConfig::setProperties(int interval, propertiesPtr props){
     if(!props) props = boost::make_shared<properties>();
 
 

@@ -27,16 +27,33 @@ void registerTest(string test_name, test_func t){
     }
 }
 
+void printTestSummary(int passed, int failed){
+    cout << endl;
+    cout << endl;
+    cout << "[******************************** Test Summary ********************************]" << endl;
+    cout << "[Total number of tests : " << passed + failed  << " ]" << endl;
+    cout << "[Total passed : " << passed  << " ]" << endl;
+    cout << "[Total failed : " << failed  << " ]" << endl;
+    cout << "[******************************** End  Summary ********************************]" << endl;
+    cout << endl;
+}
+
 void runTests(string lbl){
     cout << "[Start of Test Suite : { " << lbl << " } {number of tests : " << testRegistry.size()  << "} ]" << endl;
     map<string, test_func>::iterator testIt = testRegistry.begin();
+    int failed_tests = 0 ;
     for(; testIt != testRegistry.end(); testIt++){
         current_test = testIt->first;
         //run a test
         bool ret = (testIt->second)();
-        if(ret)
+        if(ret){
             testSuccess();
+        } else{
+            failed_tests++;
+        }
     }
-    cout << "[End of Test Suite : { " << lbl << " }  success !! ]" << endl;
+
+    printTestSummary(testRegistry.size() - failed_tests, failed_tests);
+    cout << "[End of Test Suite : { " << lbl << " }  success !! ]" << endl << endl ;
 
 }

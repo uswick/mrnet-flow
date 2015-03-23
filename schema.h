@@ -528,7 +528,7 @@ public:
     const std::string field_start;
     const std::string field_end;
     const std::string field_count;
-    std::map<std::string, SchemaPtr> rFields2;
+//    std::map<std::string, SchemaPtr> rFields2;
 
 public:
     HistogramBinSchema(properties::iterator props);
@@ -635,9 +635,11 @@ typedef SharedPtr<const HistogramSchema> ConstHistogramSchemaPtr;
 
 class HistogramSchemaConfig: public SchemaConfig {
 public:
-    HistogramSchemaConfig(const std::map<std::string, SchemaConfigPtr> &rFields, propertiesPtr props=NULLProperties);
+    HistogramSchemaConfig(const SchemaConfigPtr& min, const SchemaConfigPtr& max,
+            const SchemaConfigPtr& key, const SchemaConfigPtr& value, propertiesPtr props=NULLProperties);
 
-    propertiesPtr setProperties(const std::map<std::string, SchemaConfigPtr> &rFields, propertiesPtr props);
+    propertiesPtr setProperties(const SchemaConfigPtr& min, const SchemaConfigPtr& max,
+            const SchemaConfigPtr& key, const SchemaConfigPtr& value, propertiesPtr props);
 }; // class RecordSchemaConfig
 typedef SharedPtr<HistogramSchemaConfig> HistogramSchemaConfigPtr;
 

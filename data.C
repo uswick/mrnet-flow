@@ -119,9 +119,9 @@ std::map<std::string, DataPtr> Record::getFieldsMap(const ConstRecordSchemaPtr s
 // Maps the given field name to the given data object
 void Record::add(const std::string& label, DataPtr obj, const ConstRecordSchemaPtr schema) {
   assert(schema->schemaFinalized);
-/*  cout << "Record::add() label="<<label<<endl;
-  cout << "idx="<<schema->getIdx(label)<<endl;
-  cout << "obj="; obj->str(cout); cout<<endl;*/
+//  cout << "Record::add() label="<<label<<endl;
+    /* cout << "idx="<<schema->getIdx(label)<<endl;
+     cout << "obj="; obj->str(cout); cout<<endl;*/
   rFields[schema->getIdx(label)] = obj;
 //  cout << "#rFields="<<rFields.size()<<endl;
 }
@@ -683,7 +683,7 @@ bool HistogramBin::operator==(const DataPtr& that_arg) const {
 }
 
 bool HistogramBin::operator==(const HistogramBinPtr& that) const{
-    return start == that->start && count == that->count && end == that->count; }
+    return start == that->start && count == that->count && end == that->end; }
 
 // Return whether this object is strictly less than that object
 // that must have a name that is compatible with this
@@ -693,7 +693,7 @@ bool HistogramBin::operator<(const DataPtr& that_arg) const {
     return *this < that;
 }
 bool HistogramBin::operator<(const HistogramBinPtr that) const
-{ return start < that->start || count < that->count || end < that->count; }
+{ return start < that->start || count < that->count || end < that->end; }
 
 // Call the parent class's getName call and then Append this class' unique name
 // to the name list.

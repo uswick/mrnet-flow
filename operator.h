@@ -669,9 +669,15 @@ public:
 
     ~SynchedRecordJoinOperator();
 
+    //set Input Schema for this operator
+    void setInSchema(RecordSchemaPtr recSchmea);
+
+    //set output Schema for this operator
+    void setOutSchema(HistogramSchemaPtr histoSchema);
+
     // Called to signal that all the incoming streams have been connected. Returns the schemas
     // of the outgoing streams based on the schemas of the incoming streams.
-    std::vector<SchemaPtr> inConnectionsComplete();
+    virtual std::vector<SchemaPtr> inConnectionsComplete();
 
     // Called when a record arrives on all the incoming streams (synched by parent operator).
     // inData: holds the Data object from each stream.
@@ -806,6 +812,7 @@ private:
     std::vector<DataPtr> dataBuffer;
 
     DataPtr outputHistogram;
+    bool output_initialized ;
 
 public:
 
@@ -823,7 +830,7 @@ public:
 
     ~SynchedHistogramJoinOperator();
 
-    void recv(unsigned int inStreamIdx, DataPtr obj);
+    virtual void recv(unsigned int inStreamIdx, DataPtr obj);
 
     // Called to signal that all the incoming streams have been connected. Returns the schemas
     // of the outgoing streams based on the schemas of the incoming streams.
@@ -852,9 +859,9 @@ public:
 
 */
 
-class SynchedHistogramJoin: public OperatorConfig {
+class SynchedHistogramJoinOperatorConfig: public OperatorConfig {
 public:
-    SynchedHistogramJoin(unsigned int ID, int interval, propertiesPtr props=NULLProperties);
+    SynchedHistogramJoinOperatorConfig(unsigned int ID, int interval, propertiesPtr props=NULLProperties);
 
     static propertiesPtr setProperties(int interval, propertiesPtr props);
 

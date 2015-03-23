@@ -93,23 +93,19 @@ bool test_aggregate2(){
     std::map<DataPtr, std::list<DataPtr> > data = histo->getData();
     std::map<DataPtr, std::list<DataPtr> >::iterator dataIt = data.begin();
 
-    for(; dataIt != data.end(); dataIt++){
+//    list
+
+    int test_counts[] = {2 , 3, 3, 2};
+    for(int i = 0 ; dataIt != data.end(); dataIt++, i++){
         DataPtr value = *dataIt->second.begin();
 
         //check values
         HistogramBinPtr colData = dynamicPtrCast<HistogramBin>(value);
         int count = dynamicPtrCast<Scalar<int> >(colData->getCount())->get();
-
-        if (dataIt == data.begin() && count != 2){
-            //first coloumn count should be 2
-            testFailure();
-        } else if ( dataIt != data.end()  && count != 3){
-            //everything else except last coloumn count should be 3
+        if(count != test_counts[i]){
             testFailure();
         }
     }
-
-
     return true;
 }
 

@@ -11,6 +11,7 @@ map<unsigned int, SchemaPtr> output_schemas;
 static void registerDeserializersFilter() {
     // Schemas
     SchemaRegistry::regCreator("Record", &RecordSchema::create);
+    SchemaRegistry::regCreator("Scalar", &ScalarSchema::create);
     SchemaRegistry::regCreator("Histogram",  &HistogramSchema::create);
     SchemaRegistry::regCreator("HistogramBin", &HistogramBinSchema::create);
 
@@ -26,7 +27,7 @@ SchemaPtr getInputSchemaFilterNode(int numFields) {
     RecordSchemaPtr recSchema = makePtr<RecordSchema>();
     for(int i = 0 ; i < numFields ; i++) {
         SharedPtr<ScalarSchema> recScalarSchema = makePtr<ScalarSchema>(ScalarSchema::doubleT);
-        recSchema->add("Rec_" + i,  recScalarSchema);
+        recSchema->add(txt() << "Rec_" << i,  recScalarSchema);
     }
     recSchema->finalize();
     return recSchema;
@@ -146,6 +147,7 @@ SharedPtr<SourceOperator> getFlowSource(structureParser& parser, glst_t& filter_
         } else
             op->inConnectionsComplete();
 
+//        op->str(cout);
         vector<SchemaPtr> outStreamSchemas = op->inConnectionsComplete();
 //        printf("OP ID : %d num outputs : %d out schemas : %d \n",op->getID(), op->getNumOutputs(), outStreamSchemas.size());
         assert(op->getNumOutputs() == outStreamSchemas.size());

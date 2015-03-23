@@ -44,7 +44,7 @@ SchemaPtr getSchemaBackendNode(unsigned int numFields) {
     RecordSchemaPtr recSchema = makePtr<RecordSchema>();
     for(int i = 0 ; i < numFields ; i++) {
         SharedPtr<ScalarSchema> recScalarSchema = makePtr<ScalarSchema>(ScalarSchema::doubleT);
-        recSchema->add("Rec_" + i,  recScalarSchema);
+        recSchema->add(txt() << "Rec_" << i,  recScalarSchema);
     }
     recSchema->finalize();
     return recSchema;
