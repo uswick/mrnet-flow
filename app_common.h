@@ -3,9 +3,13 @@
 #include "schema.h"
 #include "operator.h"
 #include <time.h>
+#include <chrono>
+
 
 using namespace std;
+using namespace std::chrono;
 
+typedef std::chrono::high_resolution_clock::time_point t_pnt ;
 static __thread bool init_properties=false;
 static __thread bool generate_properties_file=false;
 static properties prop_app;
@@ -58,11 +62,19 @@ propertiesPtr init_props(){
 
         return props;
     } else {
-        cout << "[Reading application configuration from app.properties]" << endl ;
-        FILE* opConfig = fopen("app.properties", "r");
+    	const char* env_flowp = std::getenv("FLOW_HOME");
+    	char app_props_file[1000];
+    	if(env_flowp == NULL){
+		std::snprintf(app_props_file,1000,"app.properties");
+   	 }else{
+    		std::snprintf(app_props_file,1000,"%s/app.properties",env_flowp);
+        }
+	FILE* opConfig = fopen(app_props_file, "r");
         FILEStructureParser parser(opConfig, 10000);
         propertiesPtr allOpTags = parser.nextFull();
-        return *allOpTags->getContents().begin();
+        
+        cout << "[Reading application configuration from : "<< app_props_file << " completed.. !" << endl ;
+	return *allOpTags->getContents().begin();
     }
 
 }
@@ -83,8 +95,21 @@ static inline clock_t get_time(){
     return clock();
 }
 
-static inline double get_elapsed(clock_t start_t, clock_t end_t){
-    double elapsed =  ((double) (end_t - start_t)) / CLOCKS_PER_SEC;
-    printf("\n\nTotal elapsed time : %f seconds\n", elapsed);
+static inline t_pnt get_wall_time(){
+    return high_resolution_clock::now();
+}
+
+
+static inline double get_elapsed(clock_t start_t, clock_t end_t, t_pnt st, t_pnt end){
+    double elapsed =  (end_t - start_t) / (double)CLOCKS_PER_SEC;
+    double elapsed_total = duration_cast<std::chrono::milliseconds>(end - st).count()/1000.0;
+    printf("\n\nCPU time : %lf secs\n", elapsed);
+    printf("Total elapsed time : %lf secs\n",elapsed_total);
     return elapsed;
 }
+
+/*static inline double get_elapsed(clock_t start_t, clock_t end_t){
+    double elapsed =  (end_t - start_t) / (double)CLOCKS_PER_SEC;
+    printf("\n\nTotal elapsed time : %f secs\n", elapsed);
+    return elapsed;
+}*/

@@ -264,8 +264,9 @@ glst_t filter_flow_init(){
     // First, register the deserializers for all the Schemas and Operators that may be used
     registerDeserializersFilter();
 
+    int numFileds = atoi(get_property(KEY_ITEMS_PER_RECORD).c_str());
     // The flows we'll run get their input data from a file, so initialize the file to hold some data
-    SchemaPtr fileSchema = getInputSchemaFilterNode(10);
+    SchemaPtr fileSchema = getInputSchemaFilterNode(numFileds);
 
     // Create a Flow and write it out to a configuration file.
 //    createFilterSource2OutFlow(opConfigFName , fileSchema);
@@ -278,7 +279,10 @@ glst_t filter_flow_init(){
     histogram_range_stop = atof(get_property(KEY_HIST_STOP).c_str()) ;
     //lets collect coulumns of 10 width
     histogram_col_width = atof(get_property(KEY_HIST_COL_WIDTH).c_str());
-
+    
+    
+    printf("[Filter]: Application param initialization done. histogram_range_start : %f  histogram_range_stop : %f histogram_col_width : %f input_schema-numItems/Rec : %d \n", histogram_range_start, histogram_range_stop , histogram_col_width, numFileds);
+    
     createFilterSource2Join2OutFlow(opConfigFName, fileSchema,  get_num_streams(), histogram_range_start,
             histogram_range_stop, histogram_col_width);
 
@@ -288,7 +292,7 @@ glst_t filter_flow_init(){
     glst_t filter_inf ;
     getFlowSource(parser, filter_inf);
 
-    fprintf(stdout, "[Filter]: initialization complete PID : %d thread ID : %lu \n", getpid(), pthread_self());
+    fprintf(stdout, "[Filter]: initialization complete now. PID : %d thread ID : %lu \n", getpid(), pthread_self());
 
     return filter_inf;
 }

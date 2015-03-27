@@ -270,6 +270,7 @@ int main(int argc, char** argv) {
     int max = atoi(get_property(KEY_SOURCE_MAX).c_str());
     int iters = atoi(get_property(KEY_SOURCE_ITERATIONS).c_str());
 
+    printf("[BE]: Application param initialization done. numItems/Rec : %d  min_value : %d max_value : %d  genration iterations : %d \n", numFileds, min , max, iters);
     const char* opConfigFName="opconfig_backend";
 
     //unsigned int numStreams=3;

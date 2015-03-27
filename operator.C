@@ -1191,7 +1191,7 @@ SynchedHistogramJoinOperator::~SynchedHistogramJoinOperator(){}
 
 void SynchedHistogramJoinOperator::recv(unsigned int inStreamIdx, DataPtr obj){
 #ifdef VERBOSE
-    cout << "[SynchedHistogramJoinOperator] recv data... " << endl ;
+    cout << "[SynchedHistogramJoinOperator] recv data... synch_interval : " << synch_interval << endl ;
 #endif
     //lazy initialize out histogram with min/max ranges
     if(!output_initialized){
@@ -1249,12 +1249,12 @@ void SynchedHistogramJoinOperator::work(const std::vector<DataPtr>& inData){
 
 #ifdef VERBOSE
     cout << "[SynchedHistogramJoinOperator] work() joined schema : " << endl ;
-    outHistogram->str(cout, schema);
+    //outHistogram->str(cout, schema);
 #endif
 }
 
 void SynchedHistogramJoinOperator::inStreamsFinished(){
-    cout << "[SynchedHistogramJoinOperator] streams waiting for sucessfull completion... " << endl ;
+    cout << "[SynchedHistogramJoinOperator] streams waiting for sucessfull completion. records left to join :  " << dataBuffer.size()  << endl ;
     //check if any histograms left in buffer
     if(dataBuffer.size() > 0){
         //if we have anything left join them
@@ -1266,14 +1266,14 @@ void SynchedHistogramJoinOperator::inStreamsFinished(){
             outHistogram->join(curr_h);
         }
 #ifdef VERBOSE
-        cout << "[inStreamsFinished] joined schema : " << endl ;
+        cout << "[SynchedHistogramJoinOperator][inStreamsFinished] joined schema : " << endl ;
         outHistogram->str(cout, schema);
 #endif
-        outStreams[0]->transfer(outputHistogram);
 
     }
-
+    //do data transfer operation
     if(outStreams.size() > 0){
+    	outStreams[0]->transfer(outputHistogram);
         outStreams[0]->streamFinished();
     }
 }

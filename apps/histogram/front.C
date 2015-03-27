@@ -211,7 +211,11 @@ std::map<unsigned int, SchemaPtr> runFlow(structureParser& parser) {
     if(!source) { cerr << "ERROR: source operator does not derive from SourceOperator! operator="; operators[*sourceOps.begin()]->str(cerr); cerr<<endl; assert(0); }
 
     // Run the workflow, with the source emitting data and other operators receiving and propagating it
+    clock_t strt = get_time();
+    t_pnt t1 = get_wall_time();
     source->driver();
+    //print timing
+    get_elapsed(strt, get_time(), t1, get_wall_time());
 
     // The source has now completed and streamFinished() tokens have been propagated along all streams.
 
@@ -246,7 +250,7 @@ void createSource2SinkFlowFront(const char *outFName, const char *sinkFName, int
         out << source.props->tagStr();
         ++opID;
 
-        SynchedHistogramJoinOperatorConfig histJoin(opID, 10);
+        SynchedHistogramJoinOperatorConfig histJoin(opID, interval);
         out << histJoin.props->tagStr();
         ++opID;
 
@@ -279,7 +283,8 @@ int main(int argc, char** argv) {
     if(argc>1) opConfigFName = argv[1];
     //parse app.properties
     int sync_interval = atoi(get_property(KEY_SYNC_INTERVAL).c_str());
-
+    
+    cout << "[FE]: Application param initialization done. sync interval : " << sync_interval << endl ;
 //    unsigned int numStreams= get_num_streams();
 
     // First, register the deserializers for all the Schemas and Operators that may be used
@@ -294,9 +299,10 @@ int main(int argc, char** argv) {
     // Load the flow we previously wrote to the configuration file and run it.
     FILE* opConfig = fopen(opConfigFName, "r");
     FILEStructureParser parser(opConfig, 10000);
-    clock_t strt = get_time();
+    //clock_t strt = get_time();
+    //t_pnt t1 = get_wall_time();
     map<unsigned int, SchemaPtr> outSchemas = runFlow(parser);
-    get_elapsed(strt, get_time());
+    //get_elapsed(strt, get_time(), t1, get_wall_time());
     fclose(opConfig);
 
     // Show the data objects that got written to file "sink" by the flow

@@ -1,5 +1,8 @@
-REPO_PATH=/home/udayanga/Software/Flow/MRNet/mrnet_4.1.0/build/x86_64-unknown-linux-gnu
-BOOST_INSTALL_DIR=/home/udayanga/Software/Flow/Boost/boost_1_52_0/install
+REPO_PATH=/N/u/uswickra/Karst/MRNet/mrnet_4.1.0
+BOOST_INSTALL_DIR=/N/u/uswickra/Karst/boost/boost_1_52_0/install
+
+#REPO_PATH=/home/udayanga/Software/Flow/MRNet/mrnet_4.1.0/build/x86_64-unknown-linux-gnu
+#BOOST_INSTALL_DIR=/home/udayanga/Software/Flow/Boost/boost_1_52_0/install
 
 MRNET_CXXFLAGS = -g -fPIC -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS  \
 				-I${REPO_PATH}/include/mrnet  \

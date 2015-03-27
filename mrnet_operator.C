@@ -726,7 +726,7 @@ void MRNetBEOutOperator::work(unsigned int inStreamIdx, DataPtr inData) {
                 }
 //                delete out_buffer;
                 fflush(stdout);
-                sleep(1); // stagger sends
+                //sleep(1); // stagger sends
             }
                 break;
 
