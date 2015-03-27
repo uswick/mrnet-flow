@@ -18,7 +18,7 @@ TEST_CXXFLAGS= -g  -Iapps/histogram/tests/ -std=c++11
 
 CXX = g++
 #CXX = clang++
-CXXFLAGS = -fPIC -I${BOOST_INSTALL_DIR}/include -std=c++11
+CXXFLAGS = -g -fPIC -I${BOOST_INSTALL_DIR}/include -std=c++11
 
 LDFLAGS = -L${BOOST_INSTALL_DIR}/lib -lboost_thread -lboost_system
 
@@ -31,25 +31,25 @@ MRNET_LIBS = ${REPO_PATH}/lib/libmrnet.a.4.0.0  ${REPO_PATH}/lib/libxplat.a.4.0.
 all: dataTest
 
 schema.o: schema.C data.h schema.h
-	${CXX} -g ${CXXFLAGS} -I/usr/include schema.C -c -o schema.o
+	${CXX} ${CXXFLAGS} -I/usr/include schema.C -c -o schema.o
 
 data.o: data.C data.h schema.h
-	${CXX} -g ${CXXFLAGS} -I/usr/include data.C -c -o data.o
+	${CXX} ${CXXFLAGS} -I/usr/include data.C -c -o data.o
 
 operator.o: operator.C operator.h data.h schema.h
-	${CXX} -g ${CXXFLAGS} -I/usr/include operator.C -c -o operator.o
+	${CXX} ${CXXFLAGS} -I/usr/include operator.C -c -o operator.o
 
 process.o: process.C process.h sight_common_internal.h
-	${CXX} -g ${CXXFLAGS} -I/usr/include process.C -c -o process.o
+	${CXX} ${CXXFLAGS} -I/usr/include process.C -c -o process.o
 
 sight_common.o: sight_common.C process.h sight_common_internal.h
-	${CXX} -g ${CXXFLAGS} -I/usr/include sight_common.C -c -o sight_common.o
+	${CXX} ${CXXFLAGS} -I/usr/include sight_common.C -c -o sight_common.o
 
 utils.o: utils.C utils.h
-	${CXX} -g ${CXXFLAGS} -I/usr/include utils.C -c -o utils.o
+	${CXX} ${CXXFLAGS} -I/usr/include utils.C -c -o utils.o
 
 dataTest: dataTest.C *.h schema.o data.o operator.o process.o sight_common.o utils.o
-	${CXX} -g ${CXXFLAGS} -I/usr/include dataTest.C schema.o data.o operator.o process.o sight_common.o utils.o -o dataTest ${LDFLAGS}
+	${CXX} ${CXXFLAGS} -I/usr/include dataTest.C schema.o data.o operator.o process.o sight_common.o utils.o -o dataTest ${LDFLAGS}
 
 #MRNet integration specific targets
 .PHONY: mrnop
@@ -59,22 +59,22 @@ simple_topgen: simple_topgen.C
 	${CXX} -g  simple_topgen.C -o simple_topgen
 
 mrnet_operator.o: mrnet_operator.C mrnet_operator.h mrnet_flow.h
-	${CXX} -g ${MRNET_CXXFLAGS} -I/usr/include mrnet_operator.C -c -o mrnet_operator.o
+	${CXX} ${MRNET_CXXFLAGS} -I/usr/include mrnet_operator.C -c -o mrnet_operator.o
 
 mrnet_flow.o: mrnet_flow.C mrnet_flow.h
-	${CXX} -g ${MRNET_CXXFLAGS} -I/usr/include mrnet_flow.C -c -o mrnet_flow.o
+	${CXX} ${MRNET_CXXFLAGS} -I/usr/include mrnet_flow.C -c -o mrnet_flow.o
 
 filter_init.o: mrnet_operator.h mrnet_flow.h filter_init.h
-	${CXX} -g  ${MRNET_CXXFLAGS} -I/usr/include filter_init.C -c -o filter_init.o
+	${CXX} ${MRNET_CXXFLAGS} -I/usr/include filter_init.C -c -o filter_init.o
 
 front: front.C mrnet_operator.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
-	${CXX} -g ${MRNET_CXXFLAGS} -I/usr/include front.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o front ${MRNET_LIBS}
+	${CXX} ${MRNET_CXXFLAGS} -I/usr/include front.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o front ${MRNET_LIBS}
 
 backend: backend.C mrnet_operator.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
-	${CXX} -g ${MRNET_CXXFLAGS} -I/usr/include backend.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o backend ${MRNET_LIBS}
+	${CXX} ${MRNET_CXXFLAGS} -I/usr/include backend.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o backend ${MRNET_LIBS}
 
 filter.so: filter.C mrnet_operator.o filter_init.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
-	${CXX} -g ${MRNET_CXXFLAGS} ${MRNET_SOFLAGS} -I/usr/include filter.C mrnet_operator.o filter_init.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o filter.so ${MRNET_LIBS}
+	${CXX} ${MRNET_CXXFLAGS} ${MRNET_SOFLAGS} -I/usr/include filter.C mrnet_operator.o filter_init.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o filter.so ${MRNET_LIBS}
 
 #############################################################
 #
@@ -86,16 +86,16 @@ filter.so: filter.C mrnet_operator.o filter_init.o *.h schema.o data.o operator.
 histogram: mrnop apps/histogram/front apps/histogram/backend apps/histogram/filter.so
 
 apps/histogram/filter_init.o: mrnet_operator.h mrnet_flow.h apps/histogram/filter_init.h
-	${CXX} -g  ${MRNET_CXXFLAGS} -I./ apps/histogram/filter_init.C -c -o apps/histogram/filter_init.o
+	${CXX} ${MRNET_CXXFLAGS} -I./ apps/histogram/filter_init.C -c -o apps/histogram/filter_init.o
 
 apps/histogram/front: apps/histogram/front.C mrnet_operator.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
-	${CXX} -g ${MRNET_CXXFLAGS} -I./ apps/histogram/front.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram/front ${MRNET_LIBS}
+	${CXX} ${MRNET_CXXFLAGS} -I./ apps/histogram/front.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram/front ${MRNET_LIBS}
 
 apps/histogram/backend: apps/histogram/backend.C mrnet_operator.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
-	${CXX} -g ${MRNET_CXXFLAGS} -I./ apps/histogram/backend.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram/backend ${MRNET_LIBS}
+	${CXX} ${MRNET_CXXFLAGS} -I./ apps/histogram/backend.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram/backend ${MRNET_LIBS}
 
 apps/histogram/filter.so: filter.C mrnet_operator.o apps/histogram/filter_init.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
-	${CXX} -g ${MRNET_CXXFLAGS} ${MRNET_SOFLAGS} -I./ filter.C mrnet_operator.o apps/histogram/filter_init.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram/filter.so ${MRNET_LIBS}
+	${CXX} ${MRNET_CXXFLAGS} ${MRNET_SOFLAGS} -I./ filter.C mrnet_operator.o apps/histogram/filter_init.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram/filter.so ${MRNET_LIBS}
 
 
 #############################################################
