@@ -51,10 +51,19 @@ files=(props/*.properties.*)
 echo "Total jobs scheduled : ${#files[*]}"
 total=${#files[*]}
  
+if [ $total -eq 1 ] ; then 
+	echo "[no app config files for scheduled jobs were found in $FLOW_HOME/jobs/props folder!]"
+	echo "[Note app config files in $FLOW_HOME/jobs/props folder must be in the format --> app.properties.[num_nodes] ]"
+	echo ""
+	echo "[ending flow job...]"
+	exit
+fi
+
+
 echo
-echo "*****************************************************************************"
+echo "***************************************************************************************"
 echo " Starting FLOW job queue. [properties] : $FLOW_HOME/jobs/props/*.properties.num files "
-echo "*****************************************************************************"
+echo "***************************************************************************************"
 # Use for loop iterate through an array
 # $f stores current value 
 for f in "${files[@]}"
@@ -70,6 +79,7 @@ do
 	echo "===============================================================================================" 
 	echo ""
 	echo ""
+	sleep 2
 done
 
 
