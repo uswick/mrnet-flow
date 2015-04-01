@@ -26,6 +26,7 @@ int main(int argc, char** argv){
 	int i = 0;
 	char hosts[num_hosts];
 	for(string host ; getline(input, host);){
+		if( i >= num_hosts) break;
 		size_t len = host.copy(hostnames[i++], 200, 0);
 		hostnames[i-1][len] = '\0';
 	}

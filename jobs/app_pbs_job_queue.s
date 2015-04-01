@@ -1,6 +1,6 @@
 #!/bin/bash
-#PBS -l nodes=23:ppn=1
-#PBS -l walltime=00:03:00
+#PBS -l nodes=41:ppn=1
+#PBS -l walltime=00:30:00
 #PBS -N flow_job
 ##PBS -q debug
 #PBS -V
@@ -45,12 +45,33 @@ echo "[host file written to $FLOW_HOME/jobs/hosts.txt ]" >> $LOG_FILE
 #mrnet_topgen -t b:${fanout}^${depth} \
 # -h $hostfile -o $topofile > topgen.log  2>&1
 
-num_hosts=`expr $fanout + 1`
-simple_topgen $hostfile $num_hosts $topofile  
-cp $topofile $FLOW_HOME/top_file 
+files=(props/*.properties.*)
+ 
+# find total number of files in an array
+echo "Total jobs scheduled : ${#files[*]}"
+total=${#files[*]}
+ 
+echo
+echo "*****************************************************************************"
+echo " Starting FLOW job queue. [properties] : $FLOW_HOME/jobs/props/*.properties.num files "
+echo "*****************************************************************************"
+# Use for loop iterate through an array
+# $f stores current value 
+for f in "${files[@]}"
+do
+	fanout="${f#*app.properties.}"
+	cp $f $FLOW_HOME/app.properties
+	echo -n "executing FLOW with properties file -> $f  num backend nodes -> $fanout"
+	num_hosts=`expr $fanout + 1`
+	simple_topgen $hostfile $num_hosts $topofile  
+	cp $topofile $FLOW_HOME/top_file 
+	cd $FLOW_HOME/apps/histogram;$binprog
+	echo ""
+	echo "===============================================================================================" 
+	echo ""
+	echo ""
+done
 
-#execute flow
-cd $FLOW_HOME/apps/histogram;$binprog
 
 echo "[topology infromation file generated]" >> $LOG_FILE
 echo "[topology infromation file copied to  $FLOW_HOME/jobs/topgen.log ]" >> $LOG_FILE
