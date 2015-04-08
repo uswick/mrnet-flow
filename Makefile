@@ -18,7 +18,7 @@ TEST_CXXFLAGS= -g  -Iapps/histogram/tests/ -std=c++11
 
 CXX = g++
 #CXX = clang++
-CXXFLAGS = -g -fPIC -I${BOOST_INSTALL_DIR}/include -std=c++11
+CXXFLAGS = -fPIC -g  -I${BOOST_INSTALL_DIR}/include -std=c++11
 
 LDFLAGS = -L${BOOST_INSTALL_DIR}/lib -lboost_thread -lboost_system
 

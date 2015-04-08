@@ -1,8 +1,8 @@
 #!/bin/bash
-#PBS -l nodes=41:ppn=1
+#PBS -l nodes=4:ppn=1
 #PBS -l walltime=00:30:00
 #PBS -N flow_job
-##PBS -q debug
+#PBS -q debug
 #PBS -V
 
 fanout=22
@@ -45,7 +45,7 @@ echo "[host file written to $FLOW_HOME/jobs/hosts.txt ]" >> $LOG_FILE
 #mrnet_topgen -t b:${fanout}^${depth} \
 # -h $hostfile -o $topofile > topgen.log  2>&1
 
-files=(props/*.properties.*)
+files=($FLOW_HOME/jobs/props/*.properties.*)
  
 # find total number of files in an array
 echo "Total jobs scheduled : ${#files[*]}"
@@ -68,7 +68,7 @@ echo "**************************************************************************
 # $f stores current value 
 for f in "${files[@]}"
 do
-	fanout="${f#*app.properties.}"
+	fanout="${f#*.properties.}"
 	cp $f $FLOW_HOME/app.properties
 	echo -n "executing FLOW with properties file -> $f  num backend nodes -> $fanout"
 	num_hosts=`expr $fanout + 1`

@@ -446,6 +446,9 @@ void MRNetFESourceOperator::work() {
         // Broadcast a control message to back-ends to send us "num_iters"
         // waves of integers
         tag = FLOW_START_PHASE;
+
+        dt = 0.0;
+        t_pnt st = get_wall_t();
         if (active_stream->send(tag, "%d ", send_val) == -1) {
             fprintf(stderr, "[FE]: stream::send() failure\n");
             return;
@@ -454,6 +457,7 @@ void MRNetFESourceOperator::work() {
             fprintf(stderr, "[FE]: stream::flush() failure\n");
             return;
         }
+	dt =  duration_cast<std::chrono::milliseconds>(get_wall_t() - st).count()/1000.0 ;
         init = true;
     }
 
@@ -463,7 +467,9 @@ void MRNetFESourceOperator::work() {
         fflush(stdout);
         #endif
 
+        t_pnt st = get_wall_t();
         int retval = active_stream->recv(&tag, p);
+	dt +=  duration_cast<std::chrono::milliseconds>(get_wall_t() - st).count()/1000.0 ;
 
         #ifdef VERBOSE
         printf("[FE]: MRNet packet recieved succesfully ..\n");
@@ -547,6 +553,7 @@ void MRNetFESourceOperator::work() {
     else {
         delete active_stream;
         delete net;
+    	printf("Total CPU_FLOW time : %lf secs\n", dt);
         printf("[FE]: Flow data transfer is successfull... !! PID : %d \n\n", getpid());
         // Tell back-ends to exit
 //        MRN::Stream *ctl_stream = net->new_Stream(comm_BC, TFILTER_MAX,

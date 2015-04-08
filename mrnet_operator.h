@@ -3,6 +3,8 @@
 #include "mrnet/MRNet.h"
 #include "mrnet/Packet.h"
 #include "mrnet/NetworkTopology.h"
+#include <time.h>
+#include <chrono>
 
 //using namespace MRN ;
 /*****************************************
@@ -256,6 +258,13 @@ public:
 extern bool saw_failure;
 
 
+typedef std::chrono::high_resolution_clock::time_point t_pnt ;
+using namespace std::chrono;
+
+static inline t_pnt get_wall_t(){
+    return high_resolution_clock::now();
+};
+
 class MRNetFESourceOperator : public SourceOperator {
 private:
     SchemaPtr schema;
@@ -271,6 +280,9 @@ private:
     MRN::Network * net;
     MRN::Stream * active_stream;
     MRN::Communicator *comm_BC;
+   
+    double dt;
+   
 
 public:
     // Loads the Operator from its serialized representation
