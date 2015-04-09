@@ -17,8 +17,8 @@
 
 using namespace MRN ;
 
-int __thread BE_ARG_CNT = 0 ;
-char**  BE_ARGS = NULL ;
+//int __thread BE_ARG_CNT = 0 ;
+//char**  BE_ARGS = NULL ;
 /**
 * each filter initialize a Flow
 * minimally each flow has a
@@ -86,8 +86,9 @@ void defaultFlowFilter(std::vector< PacketPtr > &packets_in,
 
     //initialize with MRNet runtime data
     SharedPtr<MRNetFilterSourceOperator> source_op = dynamicPtrCast<MRNetFilterSourceOperator>(state->op);
+    SharedPtr<MRNetFilterOutOperator> sink_op = dynamicPtrCast<MRNetFilterOutOperator>(state->sink);
     source_op->setMRNetInfoObject(minfo);
-    state->sink->setMRNetInfoObject(minfo);
+    sink_op->setMRNetInfoObject(minfo);
 
     //exectue workflow
     state->op->work();
@@ -117,6 +118,7 @@ glst_t *initAndGetGlobal(void **state_data, MRNetInfo& minfo) {
         //source - mrnet filter source
 
         *state_data = global_state;
+    	Flow_Finalize();
     } else {
         global_state = (glst_t *) (*state_data);
     }
