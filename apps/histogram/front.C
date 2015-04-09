@@ -27,24 +27,6 @@ static void registerDeserializersFront() {
     OperatorRegistry::regCreator("OutFile", &OutFileOperator::create);
 }
 
-// Reads a given file using a given Schema and prints the Data objects in it
-static void printDataFile(const char* fName, SchemaPtr schema) {
-    FILE* in = fopen(fName, "r");
-    assert(in);
-    unsigned int dNum=0;
-    fgetc(in);
-    while(!feof(in)) {
-        fseek(in, -1, SEEK_CUR);
-        DataPtr data = schema->deserialize(in);
-        cout << dNum << ": "; data->str(cout, schema) << endl;
-        cout << "-----"<<endl;
-        ++dNum;
-        fgetc(in);
-    }
-
-    fclose(in);
-}
-
 SchemaPtr getAggregate_Schema(){
     HistogramSchemaPtr outputHistogramSchema = makePtr<HistogramSchema>();
     return outputHistogramSchema;

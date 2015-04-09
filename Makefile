@@ -85,7 +85,7 @@ filter.so: filter.C mrnet_operator.o filter_init.o *.h schema.o data.o operator.
 .PHONY: histogram
 histogram: mrnop apps/histogram/front apps/histogram/backend apps/histogram/filter.so
 
-apps/histogram/filter_init.o: mrnet_operator.h mrnet_flow.h apps/histogram/filter_init.h
+apps/histogram/filter_init.o: mrnet_operator.h mrnet_flow.h filter_init.h
 	${CXX} ${MRNET_CXXFLAGS} -I./ apps/histogram/filter_init.C -c -o apps/histogram/filter_init.o
 
 apps/histogram/front: apps/histogram/front.C mrnet_operator.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
