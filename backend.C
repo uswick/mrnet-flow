@@ -134,29 +134,15 @@ int main(int argc, char** argv) {
 
     Flow_Init(argc, argv);
     //init params
-//    BE_ARG_CNT = argc ;
-//    BE_ARGS = argv ;
-
-    //fprintf(stdout, "[FE]: initialization complete PID : %d thread ID : %lu \n", getpid(), pthread_self());
-    //const char* opConfigFName="opconfig_backend";
-//    char opConfigFName[200];
-//    char sourceFName[200];
-//    snprintf(opConfigFName, 200, "opconfig_backend.%d.%lu",getpid(),pthread_self());
-//    snprintf(sourceFName, 200, "source.%d.%lu",getpid(),pthread_self());
-
-    //unsigned int numStreams=3;
-//    unsigned int numStreams=get_num_streams();
     unsigned int numStreams= NUM_STREAMS;
 
     // First, register the deserializers for all the Schemas and Operators that may be used
     registerDeserializersBackend();
 
     // The flows we'll run get their input data from a file, so initialize the file to hold some data
-//    SchemaPtr fileSchema = getSchemaBackendNodeFillSource(sourceFName, numStreams);
     SchemaPtr fileSchema = getSchemaBackendNodeFillSource(SOURCE_FILE, numStreams);
 
     // Create a BE MRNet Flow
-//    createSource2SinkFlowBackend(opConfigFName, sourceFName, fileSchema);
     createSource2SinkFlowBackend(CONFIG_BE, SOURCE_FILE, fileSchema);
 
     // Load the flow we previously wrote to the configuration file and run it.

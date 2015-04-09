@@ -8,8 +8,10 @@ using namespace std;
 
 typedef struct {
     SharedPtr<SourceOperator> op;
-    SharedPtr<MRNetFilterOutOperator> sink;
+    SharedPtr<Operator> sink;
     map<unsigned int, SchemaPtr> out_schemas;
 } glst_t;
+
+extern glst_t nullFilterInfo;
 
 glst_t filter_flow_init();

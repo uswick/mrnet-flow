@@ -9,8 +9,8 @@
 
 using namespace std;
 
-int __thread BE_ARG_CNT = 0 ;
-char**  BE_ARGS = NULL ;
+//int __thread BE_ARG_CNT = 0 ;
+//char**  BE_ARGS = NULL ;
 
 // Registers deserializers for all the standard Schemas and Operators
 static void registerDeserializersFront() {
@@ -48,189 +48,6 @@ static void printDataFile(const char* fName, SchemaPtr schema) {
 SchemaPtr getAggregate_Schema(){
     HistogramSchemaPtr outputHistogramSchema = makePtr<HistogramSchema>();
     return outputHistogramSchema;
-}
-
-class Op2OpEdge {
-public:
-    unsigned int fromOpID;
-    unsigned int fromOpPort;
-    unsigned int toOpID;
-    unsigned int toOpPort;
-
-    Op2OpEdge(unsigned int fromOpID, unsigned int fromOpPort, unsigned int toOpID, unsigned int toOpPort) :
-            fromOpID(fromOpID), fromOpPort(fromOpPort), toOpID(toOpID), toOpPort(toOpPort)
-    {}
-
-/*  bool operator==(const Op2OpEdge& that);
-  
-  bool operator<(const Op2OpEdge& that);*/
-
-    std::ostream& str(std::ostream& out) const
-    { out << "[Op2OpEdge: "<<fromOpID<<":"<<fromOpPort<<" -> "<<toOpID<<":"<<toOpPort<<"]"; return out; }
-};
-
-// Given a parser that reads a given configuration file, load it and run it.
-// Returns a mapping of the IDs of sink operators (special types that produce externally-visible
-// artifacts like files or sockets) to the schemas of their outputs.
-std::map<unsigned int, SchemaPtr> runFlow(structureParser& parser) {
-    // Maps Operator unique IDs to pointers to the Operators themselves
-    map<unsigned int, OperatorPtr> operators;
-
-    // Operators that have no incoming edges. Initially filled with all operators.
-    // Then we remove all operators that have an incoming edge.
-    set<unsigned int> sourceOps;
-
-    // Operators that have no outgoing edges. Initially filled with all operators.
-    // Then we remove all operators that have an outgoing edge.
-    set<unsigned int> sinkOps;
-
-    // Load all the operators
-    {
-        propertiesPtr allOpTags = parser.nextFull();
-        assert(allOpTags->name() == "Operators");
-
-        for(list<propertiesPtr>::const_iterator opTag=allOpTags->getContents().begin(); opTag!=allOpTags->getContents().end(); ++opTag) {
-            // Deserialize this Operator and add it to operators
-            OperatorPtr newOp = OperatorRegistry::create(*opTag);
-            if(operators.find(newOp->getID()) != operators.end())
-            { cerr << "ERROR: operator ID "<<newOp->getID()<<" has previously been observed!"<<endl;
-                cerr << "Prior operator: "; operators[newOp->getID()]->str(cerr); cerr<<endl;
-                cerr << "New operator: ";   newOp->str(cerr);                     cerr<<endl;
-                assert(0); }
-            operators[newOp->getID()] = newOp;
-            sourceOps.insert(newOp->getID());
-            sinkOps.insert(newOp->getID());
-        }
-    }
-
-    /*cout << "operators:"<<endl;
-    for(map<unsigned int, OperatorPtr>::iterator op=operators.begin(); op!=operators.end(); ++op) {
-      cout << "    "<<op->first<<": "; op->second->str(cout); cout << endl;
-    }*/
-
-    // Maps each operator to its outgoing and incoming edges
-    map<unsigned int, list<Op2OpEdge> > outEdges;
-    map<unsigned int, vector<StreamPtr> > inEdges;
-
-    // Initialize inEdges to assign enough storage to each vector to hold all the
-    // inputs of its corresponding Operator
-    for(map<unsigned int, OperatorPtr>::iterator op=operators.begin(); op!=operators.end(); ++op)
-        if(op->second->getNumInputs()>0)
-            inEdges[op->first].resize(op->second->getNumInputs());
-
-    {
-        propertiesPtr allStreamTags = parser.nextFull();
-        assert(allStreamTags->name() == "Streams");
-
-        // Load all the operator->operator streams
-        for(list<propertiesPtr>::const_iterator streamTag=allStreamTags->getContents().begin(); streamTag!=allStreamTags->getContents().end(); ++streamTag) {
-            assert(operators.find((*streamTag)->begin().getInt("fromOpID")) != operators.end());
-            assert(operators.find((*streamTag)->begin().getInt("toOpID")) != operators.end());
-
-            // Deserialize this edge and add it to outEdges and inEdges
-            Op2OpEdge edge((*streamTag)->begin().getInt("fromOpID"), (*streamTag)->begin().getInt("fromOpPort"),
-                    (*streamTag)->begin().getInt("toOpID"),   (*streamTag)->begin().getInt("toOpPort"));
-            outEdges[edge.fromOpID].push_back(edge);
-            /* // Add a NULL Stream Pointer to inEdges to ensure that the vector has space once we place the real StreamPtr in it
-            unsigned int toOpPort = (*streamTag)->begin().getInt("toOpPort");
-            inEdges[edge.toOpID].reserve(toOpPort);
-            inEdges[edge.toOpID][toOpPort] = NULLStream;*/
-
-            // Remove the edge's target Operator from sourceOps
-            sourceOps.erase((unsigned int)((*streamTag)->begin().getInt("toOpID")));
-
-            // Remove the edge's source Operator from sinkOps
-            sinkOps.erase((unsigned int)((*streamTag)->begin().getInt("fromOpID")));
-        }
-    }
-
-/*  {
-    cout << "outEdges:"<<endl;
-    for(map<unsigned int, list<Op2OpEdge> >::iterator out=outEdges.begin(); out!=outEdges.end(); ++out) {
-      cout << "    "<<out->first<<" #="<<out->second.size()<<endl;
-      for(list<Op2OpEdge>::iterator oe=out->second.begin(); oe!=out->second.end(); ++oe) {
-        cout << "        "; oe->str(cout); cout << endl;
-      }
-    }
-  }
-  
-  {
-    cout << "inEdges:"<<endl;
-    for(map<unsigned int, vector<StreamPtr> >::iterator in=inEdges.begin(); in!=inEdges.end(); ++in) {
-      cout << "    "<<in->first<<" #="<<in->second.size()<<endl;
-    }
-  }*/
-
-    // Connect Operators via Streams
-    for(map<unsigned int, OperatorPtr>::iterator opIt=operators.begin(); opIt!=operators.end(); ++opIt) {
-        unsigned int opID = opIt->first;
-        OperatorPtr op = opIt->second;
-
-        // If this operator has any incoming streams
-        if(op->getNumInputs()>0) {
-            // Connect the incoming streams to op's input ports
-            map<unsigned int, vector<StreamPtr> >::iterator in=inEdges.find(opID);
-            assert(in != inEdges.end());
-            unsigned int inPort=0;
-            for(vector<StreamPtr>::iterator ie=in->second.begin(); ie!=in->second.end(); ++ie, ++inPort) {
-                op->inConnect(inPort, *ie);
-            }
-
-            // Else, if this operator has no incoming streams
-        } else
-            op->inConnectionsComplete();
-
-        vector<SchemaPtr> outStreamSchemas = op->inConnectionsComplete();
-        assert(op->getNumOutputs() == outStreamSchemas.size());
-        if(op->getNumOutputs()>0) {
-            map<unsigned int, list<Op2OpEdge> >::iterator out=outEdges.find(opID);
-            assert(out != outEdges.end());
-
-            // Create Streams for all the outgoing ports, connect them to the op's output ports and record them for later connection
-            unsigned int outPort=0;
-            assert(out->second.size() == outStreamSchemas.size());
-            list<Op2OpEdge>::iterator oe=out->second.begin();
-            vector<SchemaPtr>::iterator os=outStreamSchemas.begin();
-            for(; os!=outStreamSchemas.end(); ++oe, ++os, ++outPort) {
-                StreamPtr outStream = makePtr<Stream>(*os);
-                op->outConnect(outPort, outStream);
-                //cout << "inEdges[oe->toOpID].size()="<<inEdges[oe->toOpID].size()<<", oe->toOpPort="<<oe->toOpPort<<endl;
-                assert(inEdges[oe->toOpID].size() > oe->toOpPort);
-                inEdges[oe->toOpID][oe->toOpPort] = outStream;
-            }
-        }
-
-        op->outConnectionsComplete();
-    }
-
-    if(sourceOps.size()==0) { cerr << "ERROR: no source operators! Need some operator to produce data."<<endl; assert(0); }
-    if(sourceOps.size()>1) { cerr << "ERROR: multiple source operators not supported in sequential implementation!"<<endl; assert(0); }
-    assert(operators.find(*sourceOps.begin()) != operators.end());
-
-    SharedPtr<SourceOperator> source = dynamicPtrCast<SourceOperator>(operators[*sourceOps.begin()]);
-    if(!source) { cerr << "ERROR: source operator does not derive from SourceOperator! operator="; operators[*sourceOps.begin()]->str(cerr); cerr<<endl; assert(0); }
-
-    // Run the workflow, with the source emitting data and other operators receiving and propagating it
-    clock_t strt = get_time();
-    t_pnt t1 = get_wall_time();
-    source->driver();
-    //print timing
-    get_elapsed(strt, get_time(), t1, get_wall_time());
-
-    // The source has now completed and streamFinished() tokens have been propagated along all streams.
-
-    // Collect the output schemas of the sink operators
-    map<unsigned int, SchemaPtr> outSchemas;
-    for(set<unsigned int>::iterator op=sinkOps.begin(); op!=sinkOps.end(); ++op) {
-        OutFileOperatorPtr outFile = dynamicPtrCast<OutFileOperator>(operators[*op]);
-        if(outFile) {
-            assert(outFile->getInStreams().size()==1);
-            outSchemas[*op] = (*outFile->getInStreams().begin())->getSchema();
-        }
-    }
-
-    // We now shut down by destroying all Streams and Operators.
-    return outSchemas;
 }
 
 void createSource2SinkFlowFront(const char *outFName, const char *sinkFName, int interval,
@@ -279,13 +96,14 @@ void createSource2SinkFlowFront(const char *outFName, const char *sinkFName, int
 
 
 int main(int argc, char** argv) {
-    const char* opConfigFName="opconfig_frontend";
-    if(argc>1) opConfigFName = argv[1];
+//    const char* opConfigFName="opconfig_frontend";
+//    if(argc>1) opConfigFName = argv[1];
+    Flow_Init(0, NULL);
+
     //parse app.properties
     int sync_interval = atoi(get_property(KEY_SYNC_INTERVAL).c_str());
     
     cout << "[FE]: Application param initialization done. sync interval : " << sync_interval << endl ;
-//    unsigned int numStreams= get_num_streams();
 
     // First, register the deserializers for all the Schemas and Operators that may be used
     registerDeserializersFront();
@@ -294,10 +112,10 @@ int main(int argc, char** argv) {
     SchemaPtr fileSchema = getAggregate_Schema();
 
     // Create a Flow and write it out to a configuration file.
-    createSource2SinkFlowFront(opConfigFName, "sink", sync_interval , "top_file", "backend", "filter.so", fileSchema);
+    createSource2SinkFlowFront(CONFIG_FE, "sink", sync_interval , "top_file", "backend", "filter.so", fileSchema);
 
     // Load the flow we previously wrote to the configuration file and run it.
-    FILE* opConfig = fopen(opConfigFName, "r");
+    FILE* opConfig = fopen(CONFIG_FE, "r");
     FILEStructureParser parser(opConfig, 10000);
     //clock_t strt = get_time();
     //t_pnt t1 = get_wall_time();
@@ -312,5 +130,6 @@ int main(int argc, char** argv) {
     printDataFile("sink", outSchemas.begin()->second);
     cout << "-------------------------------------------"<<endl;
 
+    Flow_Finalize();
     return 0;
 }

@@ -104,8 +104,6 @@ void createSource2SinkFlowFront(const char *outFName, const char *sinkFName,
 
 
 int main(int argc, char** argv) {
-//    const char* opConfigFName="opconfig_frontend";
-//    if(argc>1) opConfigFName = argv[1];
     Flow_Init(0, NULL);
 
 //    unsigned int numStreams= get_num_streams();

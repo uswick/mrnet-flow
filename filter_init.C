@@ -147,8 +147,6 @@ glst_t filter_flow_init(){
     SchemaPtr fileSchema = getInputSchemaFilterNode();
 
     // Create a Flow and write it out to a configuration file.
-//    createFilterSource2OutFlow(opConfigFName , fileSchema);
-//    createFilterSource2Join2OutFlow(opConfigFName, fileSchema,  get_num_streams());
     createFilterSource2Join2OutFlow(CONFIG_FILTER, fileSchema, NUM_STREAMS);
 
     FILE* opConfig = fopen(CONFIG_FILTER, "r");
