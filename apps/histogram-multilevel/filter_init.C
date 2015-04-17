@@ -89,7 +89,7 @@ void createFilterSource2Join2OutFlow(const char* outFName, SchemaPtr schema, uns
 
 
 
-glst_t filter_flow_init(){
+glst_t flow_init(){
     Flow_Init(0, NULL);
     // First, register the deserializers for all the Schemas and Operators that may be used
     registerDeserializersFilter();
@@ -119,9 +119,9 @@ glst_t filter_flow_init(){
 glst_t hetro_filter_flow_init(filter_type type){
     //in this case FE/BE and CP has all the same operators
     if(type == FE_BE_FILTER){
-        return filter_flow_init();
+        return flow_init();
     }else if (type == CP_FILTER){
-        return filter_flow_init();
+        return flow_init();
     }
 }
 //#endif

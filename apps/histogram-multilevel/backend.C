@@ -82,7 +82,7 @@ void createSource2SinkFlowBackend(const char *outFName, int min, int max, int ma
         ++opID;
 
         StreamConfig histjoin2Sink(opID, 0, opID+1, 0);
-        out << recjoin2HistJoin.props.tagStr();
+        out << histjoin2Sink.props.tagStr();
 
 
         out << streams.exitStr();

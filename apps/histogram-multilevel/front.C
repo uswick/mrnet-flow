@@ -22,7 +22,6 @@ static void registerDeserializersFront() {
 
     // Operators
     OperatorRegistry::regCreator("MRNetFrontSource",  &MRNetFESourceOperator::create);
-    OperatorRegistry::regCreator("SynchedHistogramJoin",  &SynchedHistogramJoinOperator::create);
     //create synch operator to aggregate Histograms
     OperatorRegistry::regCreator("OutFile", &OutFileOperator::create);
 }
