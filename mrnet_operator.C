@@ -416,6 +416,54 @@ int MRNetFESourceOperator::initMRNet() {
         return -1;
     }
 
+    // A Broadcast communicator contains all the back-ends
+    comm_BC = net->get_BroadcastCommunicator();
+
+    #ifdef ENABLE_HETRO_FILTERS
+    int be_filter_id = net->load_FilterFunc( so_file, BE_filter );
+    if( be_filter_id == -1 ){
+        fprintf( stderr, "ERROR: failed to load %s from library %s\n", BE_filter, so_file );
+        delete net;
+        return -1;
+    }
+    int cp_filter_id = net->load_FilterFunc( so_file, CP_filter );
+    if( cp_filter_id == -1 ){
+        fprintf( stderr, "ERROR: failed to load %s from library %s\n", CP_filter, so_file );
+        delete net;
+        return -1;
+    }
+    int fe_filter_id = net->load_FilterFunc( so_file, FE_filter );
+    if( fe_filter_id == -1 ){
+        fprintf( stderr, "ERROR: failed to load %s from library %s\n", FE_filter, so_file );
+        delete net;
+        return -1;
+    }
+    printf("FE: Loaded custom filters\n");
+
+    // use default (TFILTER_NULL) filter for downstream
+    std::string down = "";
+
+    // use default (SFILTER_DONTWAIT) filter for upstream synchronization
+    char assign[16];
+    sprintf(assign, "%d => *;", SFILTER_WAITFORALL);
+    std::string sync = assign;
+
+    // use custom BE/CP/FE upstream data filters
+    std::string up;
+    if( ! assign_filters(net, be_filter_id, cp_filter_id, fe_filter_id, up) ) {
+        fprintf( stderr, "ERROR: generate_filter_assignments() failed\n");
+        delete net;
+        return -1;
+    }
+        #ifdef VERBOSE
+        printf("[FE]: loading mrnet filter/s done !! \n");
+        #endif
+
+    // Create a stream that will use the Integer_Add filter for aggregation
+    active_stream = net->new_Stream(comm_BC, up, sync, down);
+
+    #else
+
     // Make sure path to "so_file" is in LD_LIBRARY_PATH
     int filter_id = net->load_FilterFunc(so_file, "defaultFlowFilter");
     if (filter_id == -1) {
@@ -423,16 +471,15 @@ int MRNetFESourceOperator::initMRNet() {
         delete net;
         return -1;
     }
-    #ifdef VERBOSE
-    printf("[FE]: loading mrnet filter done !! \n");
-    #endif
-
-    // A Broadcast communicator contains all the back-ends
-    comm_BC = net->get_BroadcastCommunicator();
+        #ifdef VERBOSE
+        printf("[FE]: loading mrnet filter done !! \n");
+        #endif
 
     // Create a stream that will use the Integer_Add filter for aggregation
     active_stream = net->new_Stream(comm_BC, filter_id,
             SFILTER_WAITFORALL);
+
+   #endif
 
     num_backends = int(comm_BC->get_EndPoints().size());
     return 1;

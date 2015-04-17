@@ -33,11 +33,13 @@ extern "C" {
 * Let filter accept characters arrays
 * */
 const char *defaultFlowFilter_format_string = "%ac";
+const char *CP_FlowFilter_format_string = "%ac";
 
-
-glst_t *initAndGetGlobal(void **, MRNetInfo& minfo);
+glst_t *initAndGetGlobal(void **, MRNetInfo& minfo, filter_type ftr);
 
 bool filter_initialized = false ;
+
+
 /**
 * This is the entry point of a MRNet filter - each time packets are routed up the MRNet tree each node
 * invokes a specific filter registerd at the front end. In this case  'defaultFlowFilter' is what
@@ -82,7 +84,7 @@ void defaultFlowFilter(std::vector< PacketPtr > &packets_in,
     minfo.stream_id =stream_id;
     minfo.tag_id = tag_id;
 
-    glst_t *state = initAndGetGlobal(state_data, minfo);
+    glst_t *state = initAndGetGlobal(state_data, minfo, FE_BE_FILTER);
 
     //initialize with MRNet runtime data
     SharedPtr<MRNetFilterSourceOperator> source_op = dynamicPtrCast<MRNetFilterSourceOperator>(state->op);
@@ -100,15 +102,71 @@ void defaultFlowFilter(std::vector< PacketPtr > &packets_in,
 }
 
 /**
+* This is the entry point of a MRNet CP (comm node) filter
+*/
+void CP_FlowFilter(std::vector< PacketPtr > &packets_in,
+        std::vector< PacketPtr > &packets_out,
+        std::vector< PacketPtr > & /* packets_out_reverse */,
+        void **state_data,
+        PacketPtr & /* params */,
+        const TopologyLocalInfo &inf) {
+
+#ifdef VERBOSE
+    printf("[MRNET filter]: Start of epoch PID : %d thread ID : %lu  \n", getpid(), pthread_self());
+    #endif
+
+    Network *net = const_cast< Network * >( inf.get_Network() );
+    PacketPtr first_packet = packets_in[0];
+    int stream_id = first_packet->get_StreamId();
+    int tag_id = first_packet->get_Tag();
+    MRN::Stream *stream = net->get_Stream(stream_id);
+    std::set< Rank > peers;
+    stream->get_ChildRanks(peers);
+    //handle special BE case
+    //create parameter object
+    MRNetInfo minfo;
+    minfo.net = net;
+    minfo.packets_in = &packets_in;
+    minfo.packets_out = &packets_out;
+    minfo.peers = peers ;
+    minfo.stream = stream;
+    minfo.stream_id =stream_id;
+    minfo.tag_id = tag_id;
+
+    glst_t *state = initAndGetGlobal(state_data, minfo, CP_FILTER);
+
+    //initialize with MRNet runtime data
+    SharedPtr<MRNetFilterSourceOperator> source_op = dynamicPtrCast<MRNetFilterSourceOperator>(state->op);
+    SharedPtr<MRNetFilterOutOperator> sink_op = dynamicPtrCast<MRNetFilterOutOperator>(state->sink);
+    source_op->setMRNetInfoObject(minfo);
+    sink_op->setMRNetInfoObject(minfo);
+
+    //exectue workflow
+    state->op->work();
+
+#ifdef VERBOSE
+    printf("[MRNET filter]: End of epoch output num of packets = %lu PID : %d thread ID : %lu  \n",packets_out.size()
+    ,getpid(), pthread_self());
+#endif
+}
+
+
+/**
 * Initialize/setup state - state_data will persist through out the stream communication
 * init communication constructs including queues/signals and threads.
 */
-glst_t *initAndGetGlobal(void **state_data, MRNetInfo& minfo) {
+glst_t *initAndGetGlobal(void **state_data, MRNetInfo& minfo, filter_type ftr) {
     glst_t *global_state;
     if (*state_data == NULL) {
 //        filter_initialized = true ;
         global_state = new glst_t;
-        glst_t filter_inf = filter_flow_init();
+        glst_t filter_inf;
+        #ifdef ENABLE_HETRO_FILTERS
+            filter_inf = hetro_filter_flow_init(ftr);
+        #else
+            filter_inf = filter_flow_init();
+        #endif
+
 //        SharedPtr<SourceOperator> source = filter_flow_init();
         SharedPtr<SourceOperator> source =  filter_inf.op;
         global_state->op = source;
