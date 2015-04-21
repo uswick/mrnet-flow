@@ -6,6 +6,10 @@
 #include "unistd.h"
 
 
+const char* BE_filter = "defaultFlowFilter";
+const char* FE_filter = "defaultFlowFilter";
+const char* CP_filter = "CP_FlowFilter";
+
 glst_t nullFilterInfo;
 static std::map<long, std::map<string, void*> > thread_storage;
 
@@ -251,7 +255,8 @@ SharedPtr<SourceOperator> getFlowSource(structureParser& parser, glst_t& filter_
             for(; os!=outStreamSchemas.end(); ++oe, ++os, ++outPort) {
                 StreamPtr outStream = makePtr<Stream>(*os);
                 op->outConnect(outPort, outStream);
-                //cout << "inEdges[oe->toOpID].size()="<<inEdges[oe->toOpID].size()<<", oe->toOpPort="<<oe->toOpPort<<endl;
+                cout << "inEdges[oe->toOpID].size()="<<inEdges[oe->toOpID].size()<<", oe->toOpPort="<<oe->toOpPort<<" , oe->toOpID=" << oe->toOpID <<
+				 ", oe->fromOpPort"<< oe->fromOpPort <<  ", oe->fromOpID" << oe->fromOpID  <<endl;
                 assert(inEdges[oe->toOpID].size() > oe->toOpPort);
                 inEdges[oe->toOpID][oe->toOpPort] = outStream;
             }

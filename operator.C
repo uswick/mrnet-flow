@@ -1292,6 +1292,10 @@ SynchedHistogramJoinOperatorConfig::SynchedHistogramJoinOperatorConfig(unsigned 
 
 }
 
+SynchedHistogramJoinOperatorConfig::SynchedHistogramJoinOperatorConfig(unsigned int ID, int numInputs, int interval, propertiesPtr props):
+        OperatorConfig(numInputs, /*numOutputs*/ 1, ID, setProperties(interval, props)){
+}
+
 propertiesPtr SynchedHistogramJoinOperatorConfig::setProperties(int interval, propertiesPtr props){
     if(!props) props = boost::make_shared<properties>();
 

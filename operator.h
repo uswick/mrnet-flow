@@ -862,6 +862,7 @@ public:
 class SynchedHistogramJoinOperatorConfig: public OperatorConfig {
 public:
     SynchedHistogramJoinOperatorConfig(unsigned int ID, int interval, propertiesPtr props=NULLProperties);
+    SynchedHistogramJoinOperatorConfig(unsigned int ID, int numInputs, int interval, propertiesPtr props=NULLProperties);
 
     static propertiesPtr setProperties(int interval, propertiesPtr props);
 

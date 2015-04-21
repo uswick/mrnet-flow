@@ -97,6 +97,23 @@ apps/histogram/backend: apps/histogram/backend.C mrnet_operator.o *.h schema.o d
 apps/histogram/filter.so: filter.C mrnet_operator.o apps/histogram/filter_init.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
 	${CXX} ${MRNET_CXXFLAGS} ${MRNET_SOFLAGS} -I./ filter.C mrnet_operator.o apps/histogram/filter_init.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram/filter.so ${MRNET_LIBS}
 
+#############################################################
+
+.PHONY: histogram-ml
+histogram-ml: mrnop apps/histogram-multilevel/front apps/histogram-multilevel/backend apps/histogram-multilevel/filter.so
+
+apps/histogram-multilevel/filter_init.o: mrnet_operator.h mrnet_flow.h filter_init.h
+	${CXX} ${MRNET_CXXFLAGS} -I./ apps/histogram-multilevel/filter_init.C -c -o apps/histogram-multilevel/filter_init.o
+
+apps/histogram-multilevel/front: apps/histogram-multilevel/front.C mrnet_operator.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
+	${CXX} ${MRNET_CXXFLAGS} -I./ apps/histogram-multilevel/front.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram-multilevel/front ${MRNET_LIBS}
+
+apps/histogram-multilevel/backend: apps/histogram-multilevel/backend.C mrnet_operator.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
+	${CXX} ${MRNET_CXXFLAGS} -I./ apps/histogram-multilevel/backend.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram-multilevel/backend ${MRNET_LIBS}
+
+apps/histogram-multilevel/filter.so: filter.C mrnet_operator.o apps/histogram-multilevel/filter_init.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
+	${CXX} ${MRNET_CXXFLAGS} ${MRNET_SOFLAGS} -I./ filter.C mrnet_operator.o apps/histogram-multilevel/filter_init.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram-multilevel/filter.so ${MRNET_LIBS}
+
 
 #############################################################
 #
@@ -145,4 +162,4 @@ apps/histogram/tests/app_common_test: apps/histogram/tests/app_common_test.C  *.
 # ############################################################
 
 clean:
-	rm -f *.o dataTest front backend filter.so simple_topgen apps/histogram/*.o apps/histogram/front apps/histogram/filter.so apps/histogram/backend apps/histogram/tests/*.o ${TESTS}
+	rm -f *.o dataTest front backend filter.so simple_topgen apps/*/*.o apps/*/front apps/*/filter.so apps/*/backend apps/histogram/tests/*.o ${TESTS}

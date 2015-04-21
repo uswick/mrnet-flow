@@ -51,7 +51,7 @@ void createFilterSource2Join2OutFlow(const char* outFName, SchemaPtr schema, uns
         out << source.props->tagStr();
         ++opID;
 
-        SynchedHistogramJoinOperatorConfig histJoin(opID, interval);
+        SynchedHistogramJoinOperatorConfig histJoin(opID, numStreams, interval);
         out << histJoin.props->tagStr();
         ++opID;
 
@@ -115,7 +115,7 @@ glst_t flow_init(){
     return filter_inf;
 }
 
-//#ifdef ENABLE_HETRO_FILTERS
+#ifdef ENABLE_HETRO_FILTERS
 glst_t hetro_filter_flow_init(filter_type type){
     //in this case FE/BE and CP has all the same operators
     if(type == FE_BE_FILTER){
@@ -124,4 +124,8 @@ glst_t hetro_filter_flow_init(filter_type type){
         return flow_init();
     }
 }
-//#endif
+#else
+glst_t filter_flow_init(){
+        return flow_init();
+}
+#endif

@@ -53,9 +53,9 @@ char* get_Sink();
 
 #define NUM_STREAMS get_num_streams()
 
-const char* BE_filter = "defaultFlowFilter";
-const char* FE_filter = "defaultFlowFilter";
-const char* CP_filter = "CP_FlowFilter";
+extern const char* BE_filter ;
+extern const char* FE_filter ;
+extern const char* CP_filter ;
 
 /***************************************
 * Main Functions to execute flow engine
