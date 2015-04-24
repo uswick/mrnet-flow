@@ -32,8 +32,8 @@ extern "C" {
 /*
 * Let filter accept characters arrays
 * */
-const char *defaultFlowFilter_format_string = "%ac";
-const char *CP_FlowFilter_format_string = "%ac";
+const char *defaultFlowFilter_format_string = "%auc";
+const char *CP_FlowFilter_format_string = "%auc";
 
 glst_t *initAndGetGlobal(void **, MRNetInfo& minfo, filter_type ftr);
 
@@ -52,9 +52,9 @@ void defaultFlowFilter(std::vector< PacketPtr > &packets_in,
         PacketPtr & /* params */,
         const TopologyLocalInfo &inf) {
 
-    #ifdef VERBOSE
+    //#ifdef VERBOSE
     printf("[MRNET filter]: Start of epoch PID : %d thread ID : %lu  \n", getpid(), pthread_self());
-    #endif
+    //#endif
 
     Network *net = const_cast< Network * >( inf.get_Network() );
     PacketPtr first_packet = packets_in[0];
@@ -72,8 +72,10 @@ void defaultFlowFilter(std::vector< PacketPtr > &packets_in,
         for( in = packets_in.begin() ; in != packets_in.end(); in++) {
             packets_out.push_back(*in);
         }
+    	printf("[MRNET BE filter]: Special handle for BE.  PID : %d thread ID : %lu tag_id==EXIT ? : %d  \n", getpid(), pthread_self(), tag_id == FLOW_EXIT);
         return;
     }
+    printf("[MRNET FE filter]: This is a front-end filter.  PID : %d thread ID : %lu tag_id==EXIT ? : %d  \n", getpid(), pthread_self(), tag_id == FLOW_EXIT);
     //create parameter object
     MRNetInfo minfo;
     minfo.net = net;

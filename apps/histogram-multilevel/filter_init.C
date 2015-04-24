@@ -102,7 +102,8 @@ glst_t flow_init(){
     
     printf("[Filter]: Application param initialization done. sync interval : %d\n", sync_interval);
     
-    createFilterSource2Join2OutFlow(CONFIG_FILTER, fileSchema, NUM_STREAMS, sync_interval);
+    //createFilterSource2Join2OutFlow(CONFIG_FILTER, fileSchema, NUM_STREAMS, sync_interval);
+    createFilterSource2Join2OutFlow(CONFIG_FILTER, fileSchema, 2, sync_interval);
 
     FILE* opConfig = fopen(CONFIG_FILTER, "r");
     FILEStructureParser parser(opConfig, 10000);

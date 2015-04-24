@@ -128,6 +128,20 @@ private:
     SchemaPtr schema;
     StreamBuffer * streamBuf;
     MRNetInfo mrn_info;
+    std::map<unsigned int, unsigned int> out_ranks;
+    unsigned int curr_assignment;    
+	
+
+private:
+    void _registerRank(unsigned int inrank){
+        if(out_ranks.find(inrank) == out_ranks.end()){
+            out_ranks.insert(std::pair<unsigned int ,unsigned int >(inrank, curr_assignment++));
+        }
+    };
+
+    int _getAssignment(unsigned int inrank){
+        return (int) out_ranks[inrank];
+    };
 
 public:
     // Loads the Operator from its serialized representation
@@ -138,6 +152,7 @@ public:
 
     ~MRNetFilterSourceOperator();
 
+    int findOutStream(unsigned int inrank); 
     // Called to signal that all the incoming streams have been connected. Returns the schemas
     // of the outgoing streams based on the schemas of the incoming streams.
     std::vector<SchemaPtr> inConnectionsComplete();
