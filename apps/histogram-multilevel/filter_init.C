@@ -118,6 +118,9 @@ glst_t flow_init(){
 
 #ifdef ENABLE_HETRO_FILTERS
 glst_t hetro_filter_flow_init(filter_type type){
+    #ifdef VERBOSE
+    printf("[Filter]: Hetro Filter callback \n");
+    #endif
     //in this case FE/BE and CP has all the same operators
     if(type == FE_BE_FILTER){
         return flow_init();

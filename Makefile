@@ -98,21 +98,23 @@ apps/histogram/filter.so: filter.C mrnet_operator.o apps/histogram/filter_init.o
 	${CXX} ${MRNET_CXXFLAGS} ${MRNET_SOFLAGS} -I./ filter.C mrnet_operator.o apps/histogram/filter_init.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram/filter.so ${MRNET_LIBS}
 
 #############################################################
+HIST_ML_FLAGS= -DENABLE_HETRO_FILTERS
+#HIST_ML_FLAGS= 
 
 .PHONY: histogram-ml
 histogram-ml: mrnop apps/histogram-multilevel/front apps/histogram-multilevel/backend apps/histogram-multilevel/filter.so
 
-apps/histogram-multilevel/filter_init.o: mrnet_operator.h mrnet_flow.h filter_init.h
-	${CXX} ${MRNET_CXXFLAGS} -I./ apps/histogram-multilevel/filter_init.C -c -o apps/histogram-multilevel/filter_init.o
+apps/histogram-multilevel/filter_init.o: mrnet_operator.h mrnet_flow.h apps/histogram-multilevel/filter_init.C filter_init.h
+	${CXX} ${HIST_ML_FLAGS} ${MRNET_CXXFLAGS} -I./ apps/histogram-multilevel/filter_init.C -c -o apps/histogram-multilevel/filter_init.o
 
 apps/histogram-multilevel/front: apps/histogram-multilevel/front.C mrnet_operator.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
-	${CXX} ${MRNET_CXXFLAGS} -I./ apps/histogram-multilevel/front.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram-multilevel/front ${MRNET_LIBS}
+	${CXX} ${HIST_ML_FLAGS} ${MRNET_CXXFLAGS} -I./ apps/histogram-multilevel/front.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram-multilevel/front ${MRNET_LIBS}
 
 apps/histogram-multilevel/backend: apps/histogram-multilevel/backend.C mrnet_operator.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
-	${CXX} ${MRNET_CXXFLAGS} -I./ apps/histogram-multilevel/backend.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram-multilevel/backend ${MRNET_LIBS}
+	${CXX} ${HIST_ML_FLAGS} ${MRNET_CXXFLAGS} -I./ apps/histogram-multilevel/backend.C mrnet_operator.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram-multilevel/backend ${MRNET_LIBS}
 
 apps/histogram-multilevel/filter.so: filter.C mrnet_operator.o apps/histogram-multilevel/filter_init.o *.h schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o
-	${CXX} ${MRNET_CXXFLAGS} ${MRNET_SOFLAGS} -I./ filter.C mrnet_operator.o apps/histogram-multilevel/filter_init.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram-multilevel/filter.so ${MRNET_LIBS}
+	${CXX} ${HIST_ML_FLAGS} ${MRNET_CXXFLAGS} ${MRNET_SOFLAGS} -I./ filter.C mrnet_operator.o apps/histogram-multilevel/filter_init.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram-multilevel/filter.so ${MRNET_LIBS}
 
 
 #############################################################

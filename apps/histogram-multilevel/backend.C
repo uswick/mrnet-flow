@@ -141,5 +141,6 @@ int main(int argc, char** argv) {
     fclose(opConfig);
 
     Flow_Finalize();
+    printf("[BE]: Backend completed... \n ");
     return 0;
 }

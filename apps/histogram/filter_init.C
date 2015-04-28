@@ -117,7 +117,7 @@ glst_t filter_flow_init(){
     histogram_col_width = atof(get_property(KEY_HIST_COL_WIDTH).c_str());
     
     
-    printf("[Filter]: Application param initialization done. histogram_range_start : %f  histogram_range_stop : %f histogram_col_width : %f input_schema-numItems/Rec : %d \n", histogram_range_start, histogram_range_stop , histogram_col_width, numFileds);
+    printf("[Filter]: Application param initialization done. histogram_range_start : %f  histogram_range_stop : %f histogram_col_width : %f input_schema-numItems/Rec : %d child streams : %d\n", histogram_range_start, histogram_range_stop , histogram_col_width, numFileds, NUM_STREAMS);
     
     createFilterSource2Join2OutFlow(CONFIG_FILTER, fileSchema, NUM_STREAMS, histogram_range_start,
             histogram_range_stop, histogram_col_width);

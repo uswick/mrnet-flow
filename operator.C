@@ -33,7 +33,7 @@ void Stream::streamFinished() {
 
 void Stream::setSchema(SchemaPtr alt_schema){
 //    schema = dynamicPtrCast<SchemaPtr>(alt_schema);
-    printf("schema  shared_ptr->px : %p \n", schema.get() );
+    //printf("schema  shared_ptr->px : %p \n", schema.get() );
     schema = alt_schema;
 }
 
@@ -265,9 +265,9 @@ void SynchOperator::streamFinished(unsigned int inStreamIdx) {
   for(vector<unsigned int>::iterator it = unFinishedStreams.begin(); it != unFinishedStreams.end() ;){
       if(*it == inStreamIdx){
           //remove this from list - this stream is done
-          //#ifdef VERBOSE
+          #ifdef VERBOSE
           printf("[SyncOperator]: stream finished via inStreamIdx : %u PID : %d \n", *it, getpid());
-          //#endif
+          #endif
           it = unFinishedStreams.erase(it);
       }else {
           it++;
@@ -275,7 +275,9 @@ void SynchOperator::streamFinished(unsigned int inStreamIdx) {
   }
 
   if(!finishedOperator && unFinishedStreams.size() == 0) {
+    #ifdef VERBOSE
     printf("[SyncOperator]: calling instreamFinished() \n");
+    #endif
     inStreamsFinished();
     finishedOperator = true; 
   }
@@ -1254,7 +1256,9 @@ void SynchedHistogramJoinOperator::work(const std::vector<DataPtr>& inData){
 }
 
 void SynchedHistogramJoinOperator::inStreamsFinished(){
+#ifdef VERBOSE
     cout << "[SynchedHistogramJoinOperator] streams waiting for sucessfull completion. records left to join :  " << dataBuffer.size()  << endl ;
+#endif
     //check if any histograms left in buffer
     if(dataBuffer.size() > 0){
         //if we have anything left join them

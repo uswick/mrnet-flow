@@ -255,8 +255,10 @@ SharedPtr<SourceOperator> getFlowSource(structureParser& parser, glst_t& filter_
             for(; os!=outStreamSchemas.end(); ++oe, ++os, ++outPort) {
                 StreamPtr outStream = makePtr<Stream>(*os);
                 op->outConnect(outPort, outStream);
-                cout << "inEdges[oe->toOpID].size()="<<inEdges[oe->toOpID].size()<<", oe->toOpPort="<<oe->toOpPort<<" , oe->toOpID=" << oe->toOpID <<
+                #ifdef VERBOSE
+		cout << "inEdges[oe->toOpID].size()="<<inEdges[oe->toOpID].size()<<", oe->toOpPort="<<oe->toOpPort<<" , oe->toOpID=" << oe->toOpID <<
 				 ", oe->fromOpPort"<< oe->fromOpPort <<  ", oe->fromOpID" << oe->fromOpID  <<endl;
+		#endif
                 assert(inEdges[oe->toOpID].size() > oe->toOpPort);
                 inEdges[oe->toOpID][oe->toOpPort] = outStream;
             }

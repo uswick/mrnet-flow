@@ -132,9 +132,9 @@ int MRNetFilterSourceOperator::findOutStream(unsigned int inrank){
 }
 
 void MRNetFilterSourceOperator::work() {
-//#ifdef VERBOSE
+#ifdef VERBOSE
     printf("[FilterSource]: start work().. PID : %d !! TID : %lu \n", getpid(), pthread_self());
-//#endif
+#endif
     unsigned length;
     bool be_node;
     for (unsigned int i = 0; i < mrn_info.packets_in->size(); i++) {
@@ -167,15 +167,17 @@ void MRNetFilterSourceOperator::work() {
             continue;
         }*/
 
-        //#ifdef VERBOSE
+        #ifdef VERBOSE
         printf("[FilterSource]: unpacking/deserialization in progress.. PID : %d TID : %lu tag_id==EXIT ? : %d [tag_id : %d] !! \n", getpid(), pthread_self(), tag_id == FLOW_EXIT, tag_id );
-        //#endif
+        #endif
 
         char *recv_Ar;
         //curr_packet->unpack("%ac", &recv_Ar, &length);
         bool unpack_failure = false;
         if (curr_packet->unpack("%auc", &recv_Ar, &length) == -1) {
+        #ifdef VERBOSE
             fprintf(stderr, "[FilterSource]: PROTOCOL END stream::unpack() failure\n");
+        #endif
             unpack_failure = true;
 	}
 
@@ -206,7 +208,7 @@ void MRNetFilterSourceOperator::work() {
 
         	DataPtr data = schema->deserialize(streamBuf);
 
-//#ifdef VERBOSE
+#ifdef VERBOSE
         	if (data == NULLData) {
             		printf("[FilterSource]: deserialization routine returned NULL data .. \n");
         	} else {
@@ -216,7 +218,7 @@ void MRNetFilterSourceOperator::work() {
             		data->str(cout, schema);
             		printf("\n---------------- \n\n");
        		}
-//#endif
+#endif
         	//route data ptr to respective outgoing stream
         	if (data != NULLData)
             		outStreams[out_stream_index]->transfer(data);
@@ -225,20 +227,20 @@ void MRNetFilterSourceOperator::work() {
         	//remove space taken by buffer
         	delete recv_Ar;
         	if(tag_id == FLOW_EXIT){
-           	// #ifdef VERBOSE
+           	#ifdef VERBOSE
             		printf("[FilterSource]: recieved EXIT token via inlet rank : %u, out_stream_idx: %d , forwarding to outgoing streams.. PID : %d !! \n"
                     		,(unsigned int) cur_inlet_rank, out_stream_index, getpid());
-           	// #endif
+           	#endif
             		outStreams[out_stream_index]->streamFinished();
             		//outStreams[(unsigned int) cur_inlet_rank]->streamFinished();
             		continue;
 		}
         } else{
         	if(tag_id == FLOW_EXIT){
-           	// #ifdef VERBOSE
+           	#ifdef VERBOSE
             		printf("[FilterSource]: Unpacking failed but recieved EXIT token via inlet rank : %u, out_stream_idx: %d , forwarding to outgoing streams.. PID : %d TID : %lu!! \n"
                     		,(unsigned int) cur_inlet_rank, out_stream_index, getpid(), pthread_self());
-           	// #endif
+           	#endif
             		//outStreams[(unsigned int) cur_inlet_rank]->streamFinished();
             		outStreams[out_stream_index]->streamFinished();
             		continue;
@@ -310,9 +312,9 @@ void MRNetFilterOutOperator::inStreamFinished(unsigned int inStreamIdx){
 }
 
 void MRNetFilterOutOperator::work(unsigned int inStreamIdx, DataPtr inData) {
-//#ifdef VERBOSE
+#ifdef VERBOSE
     printf("[FilterOut]: start work().. PID : %d !! \n", getpid());
-//#endif
+#endif
     bool final_packet = false;
     Packet *pckt;
 
@@ -337,15 +339,15 @@ void MRNetFilterOutOperator::work(unsigned int inStreamIdx, DataPtr inData) {
     #endif
 
     if (!final_packet) {
-        //#ifdef VERBOSE
+        #ifdef VERBOSE
         printf("[FilterOut]: preparing packet  PID : %d !! \n", getpid());
-        //#endif
+        #endif
         pckt = new Packet(mrn_info.stream_id, mrn_info.tag_id, "%auc", out_buffer,
                 bufferStream.current_total_size);
     } else {
-        //#ifdef VERBOSE
+        #ifdef VERBOSE
         printf("[FilterOut]: preparing [Final] packet  PID : %d !! \n", getpid());
-        //#endif
+        #endif
         pckt = new Packet(mrn_info.stream_id, FLOW_EXIT, "%auc", out_buffer,
                 bufferStream.current_total_size);
     }
@@ -365,9 +367,9 @@ void MRNetFilterOutOperator::work(unsigned int inStreamIdx, DataPtr inData) {
     pckt->set_DestroyData(true) ;
     PacketPtr new_packet(pckt);
     packets_out->push_back(new_packet);
-    //#ifdef VERBOSE
+    #ifdef VERBOSE
     printf("[FilterOut]: pushed back data upstream..  PID : %d !! \n", getpid());
-    //#endif
+    #endif
 
 }
 
@@ -556,10 +558,10 @@ void MRNetFESourceOperator::work() {
         int retval = active_stream->recv(&tag, p);
 	dt +=  duration_cast<std::chrono::milliseconds>(get_wall_t() - st).count()/1000.0 ;
 
-        //#ifdef VERBOSE
+        #ifdef VERBOSE
         printf("[FE]: MRNet packet recieved succesfully ..\n");
         fflush(stdout);
-        //#endif
+        #endif
         //check errors in incoming communication
         if (retval == 0) {
             //shouldn't be 0, either error or block for data, unless a failure occured
@@ -584,8 +586,10 @@ void MRNetFESourceOperator::work() {
         int length;
 	bool unpack_failure = false;
         if (p->unpack("%auc", &recv_Ar, &length) == -1) {
+        #ifdef VERBOSE
             fprintf(stderr, "[FE]: PROTOCOL END stream::unpack() failure\n");
             unpack_failure = true;
+        #endif
         }
          
         if (!unpack_failure){
@@ -603,28 +607,26 @@ void MRNetFESourceOperator::work() {
        	    schema->str(cout);
             #endif
 
-//        char tmp_buffer[10000];
-//        StreamBuffer buf(tmp_buffer, 10000);
-
         //deserialize data from rececieved information
 //        Schema::bufwrite(recv_Ar, length, &buf);
             Schema::bufwrite(recv_Ar, length, streamBuf);
             DataPtr data = schema->deserialize(streamBuf);
-	//#ifdef VERBOSE
+	#ifdef VERBOSE
         	data->str(cout, schema);
-	//#endif
+	#endif
 
             if (data != NULLData) {
-            	//#ifdef VERBOSE
+            	#ifdef VERBOSE
             	printf("[FE]: data deserialization sucessfull. ready for sink...PID : %d \n", getpid());
-            	//#endif
+            	#endif
             	outStreams[0]->transfer(data);
             } else {
-            	//#ifdef VERBOSE
+            	#ifdef VERBOSE
             	printf("[FE]: data deserialization failed...PID : %d \n", getpid());
-            	//#endif
+            	#endif
        	    }
-            delete recv_Ar;
+	    if (!recv_Ar)	
+            	delete recv_Ar;
 	    //check if this is a Exit phase
 	    if (tag == FLOW_EXIT) {
             	printf("[FE]: Recieved EXIT tag from MRNet Stream, moving into final phase..\n");
@@ -638,7 +640,9 @@ void MRNetFESourceOperator::work() {
             	outStreams[0]->streamFinished();
            	break;
        	    }
+            #ifdef VERBOSE
             printf("[FE]: Frontend returned unpack() failed...PID : %d \n", getpid());
+            #endif
 	    return;
 	}
         //remove space taken by buffer
@@ -767,9 +771,9 @@ void MRNetBEOutOperator::work(unsigned int inStreamIdx, DataPtr inData) {
         //do this at start - get the tag from FE for initial communication
         if (!init) {
             rc = net->recv(&tag, p, &stream);
-            //#ifdef VERBOSE
+            #ifdef VERBOSE
             printf("BE: starting initial communication phase \n");
-            //#endif
+            #endif
             if (rc == -1) {
                 fprintf(stderr, "[BE]: Network::recv() failure\n");
                 tag = FLOW_EXIT;
@@ -800,9 +804,9 @@ void MRNetBEOutOperator::work(unsigned int inStreamIdx, DataPtr inData) {
 
                 // then drive flow from a file source -> MRNet sink
                 //serialize Dataptr object upstream as and when #work is invoked
-                //#ifdef VERBOSE
+                #ifdef VERBOSE
                 fprintf(stdout, "[BE]: Starting to Send wave of data upstream..\n");
-                //#endif
+                #endif
                 assert(inStreamIdx == 0);
                 char *out_buffer = (char *) malloc(1000);
 
@@ -814,14 +818,14 @@ void MRNetBEOutOperator::work(unsigned int inStreamIdx, DataPtr inData) {
                 //create serialized stream on buffer using schema and data obj
                 inStreams[0]->getSchema()->serialize(inData, &bufferStream);
 
-                //#ifdef VERBOSE
+                #ifdef VERBOSE
                 fprintf(stdout, "[BE]: send() call being initiated..\n");
                 int j = 0;
                 for (j = 0; j < bufferStream.current_total_size; j++) {
                     printf("%c", out_buffer[j]);
                 }
                 printf("\n[BE]: ---------------- \n\n\n");
-                //#endif
+                #endif
 
                 if (stream->send(tag, "%auc", out_buffer, bufferStream.current_total_size) == -1) {
 //                if (stream->send(tag, "%ac", tmp, 10) == -1) {
@@ -840,7 +844,7 @@ void MRNetBEOutOperator::work(unsigned int inStreamIdx, DataPtr inData) {
                 break;
 
             case FLOW_EXIT: {
-                fprintf(stdout, "[BE]: switch case FLOW_EXIT call being initiated..PID : %d \n", getpid());
+                fprintf(stdout, "[BE]: FLOW_EXIT phase being initiated..PID : %d \n", getpid());
                 //terminate flow
                 inStreamFinished(0);
             }
