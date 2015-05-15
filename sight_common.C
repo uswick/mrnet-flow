@@ -555,7 +555,7 @@ void TagFileReaderRegistry<objType>::init() {
 template<typename objType>
 void TagFileReaderRegistry<objType>::enter(string objName, properties::iterator iter) {
   #ifdef VERBOSE
-  cout << "<<<"<<stack[objName].size()<<": "<<objName<<endl;
+  //cout << "<<<"<<stack[objName].size()<<": "<<objName<<endl;
   #endif
 //  if(enterHandlers->find(objName) == enterHandlers->end()) { cerr << "ERROR: no entry handler for \""<<objName<<"\" tags!" << endl; }
 //  assert(enterHandlers->find(objName) != enterHandlers->end());
@@ -573,7 +573,7 @@ void TagFileReaderRegistry<objType>::enter(string objName, properties::iterator 
 template<typename objType>
 void TagFileReaderRegistry<objType>::exit(string objName) {
   #ifdef VERBOSE
-  cout << ">>>"<<stack[objName].size()<<": "<<objName<<endl;
+  //cout << ">>>"<<stack[objName].size()<<": "<<objName<<endl;
   #endif
 
 //assert(stack[objName].size()>0);

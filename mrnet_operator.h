@@ -3,6 +3,7 @@
 #include "mrnet/MRNet.h"
 #include "mrnet/Packet.h"
 #include "mrnet/NetworkTopology.h"
+#include "mrnet/Types.h"
 #include <time.h>
 #include <chrono>
 

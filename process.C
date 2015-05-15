@@ -14,7 +14,7 @@
 using namespace std;
 using namespace sight::common;
 
-//#define VERBOSE
+//#define VERBOSE2
 namespace sight {
 
 /********************************
@@ -253,7 +253,7 @@ pair<typename properties::tagType, propertiesPtr> baseStructureParser<streamT>::
   //tagProperties.clear();
   propertiesPtr tagProperties = boost::make_shared<properties>();
 
-  #ifdef VERBOSE 
+  #ifdef VERBOSE2 
   cout << "============"<<(loc==start?"start":(loc==textRead?"textRead":(loc==enterTagRead?"enterTagRead":(loc==exitTagRead?"exitTagRead":(loc==done?"done":"???")))))<<"============"<<endl;
   if(loc!=start) cout << "buf["<<bufIdx<<"]="<<buf[bufIdx]<<endl;
   #endif
@@ -283,7 +283,7 @@ pair<typename properties::tagType, propertiesPtr> baseStructureParser<streamT>::
     // Look for the start of the next tag
     success = readUntil(true, "[", 1, termChar, readTxt);
     // Emit the text before the start of the tag
-    #ifdef VERBOSE
+    #ifdef VERBOSE2
     cout << "text=\""<<readTxt<<"\""<<endl;
     #endif
     //dbg << readTxt;
@@ -313,7 +313,7 @@ pair<typename properties::tagType, propertiesPtr> baseStructureParser<streamT>::
       if(!(success = readUntil(true, "]", 1, termChar, tagName))) goto DONE_LOC;
       //if(!(success = readUntil(true, " \t\r\n", 4, termChar, tagName))) goto DONE_LOC;
 
-      #ifdef VERBOSE
+      #ifdef VERBOSE2
       cout << "END \""<<tagName<<"\""<<endl;
       #endif
       
@@ -393,11 +393,11 @@ pair<typename properties::tagType, propertiesPtr> baseStructureParser<streamT>::
       // (it was not derived by another)
       if(!derived) {
         // Print out the properties
-        #ifdef VERBOSE
+        #ifdef VERBOSE2
         cout << "START "<<tagName<<endl;
         #endif
         tagProperties->add(tagName, pMap);
-        #ifdef VERBOSE
+        #ifdef VERBOSE2
         cout << tagProperties->str()<<endl;
         #endif
         

@@ -3,8 +3,10 @@ BOOST_INSTALL_DIR=/N/u/uswickra/Karst/boost/boost_1_52_0/install
 
 #REPO_PATH=/home/udayanga/Software/Flow/MRNet/mrnet_4.1.0/build/x86_64-unknown-linux-gnu
 #BOOST_INSTALL_DIR=/home/udayanga/Software/Flow/Boost/boost_1_52_0/install
+#HIST_ML_FLAGS= 
+HIST_ML_FLAGS= -DENABLE_HETRO_FILTERS
 
-MRNET_CXXFLAGS = -g -fPIC -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS  \
+MRNET_CXXFLAGS = -g -fPIC ${HIST_ML_FLAGS} -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -DVERBOSE  \
 				-I${REPO_PATH}/include/mrnet  \
 				-I${BOOST_INSTALL_DIR}/include  \
 				-I${REPO_PATH}/include  \
@@ -18,7 +20,7 @@ TEST_CXXFLAGS= -g  -Iapps/histogram/tests/ -std=c++11
 
 CXX = g++
 #CXX = clang++
-CXXFLAGS = -fPIC -g  -I${BOOST_INSTALL_DIR}/include -std=c++11
+CXXFLAGS = -fPIC -g  -I${BOOST_INSTALL_DIR}/include -std=c++11 -DVERBOSE
 
 LDFLAGS = -L${BOOST_INSTALL_DIR}/lib -lboost_thread -lboost_system
 
@@ -98,7 +100,6 @@ apps/histogram/filter.so: filter.C mrnet_operator.o apps/histogram/filter_init.o
 	${CXX} ${MRNET_CXXFLAGS} ${MRNET_SOFLAGS} -I./ filter.C mrnet_operator.o apps/histogram/filter_init.o schema.o data.o operator.o process.o sight_common.o utils.o mrnet_flow.o -o apps/histogram/filter.so ${MRNET_LIBS}
 
 #############################################################
-HIST_ML_FLAGS= -DENABLE_HETRO_FILTERS
 #HIST_ML_FLAGS= 
 
 .PHONY: histogram-ml

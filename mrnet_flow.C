@@ -51,6 +51,39 @@ char* get_Sink(){
     return (char*)"sink";
 }
 
+/*******************************************************
+ * assign API for hetro filters
+ * *********************************************************/
+#ifdef ENABLE_HETRO_FILTERS
+
+bool assign_filters( MRN::NetworkTopology* nettop, int be_filter, int cp_filter, int fe_filter, std::string& up )
+{
+	ostringstream assignment;
+
+	// assign FE
+	MRN::NetworkTopology::Node* root = nettop->get_Root();
+	assignment << fe_filter << " => " << root->get_Rank() << " ; ";
+
+	// assign BEs
+	std::set< MRN::NetworkTopology::Node * > bes;
+	nettop->get_BackEndNodes(bes);
+	std::set< MRN::NetworkTopology::Node* >::iterator niter = bes.begin();
+	for( ; niter != bes.end(); niter++ ) {
+		assignment << be_filter << " => " << (*niter)->get_Rank() << " ; ";
+	}
+
+	// assign CPs (if any) using '*', which means everyone not already assigned
+	assignment << cp_filter << " => * ; ";
+
+	up = assignment.str();
+
+	return true;
+}
+#endif
+/*******************************************************
+ * End
+ * *********************************************************/
+
 int __thread BE_ARG_CNT = 0 ;
 char**  BE_ARGS = NULL ;
 

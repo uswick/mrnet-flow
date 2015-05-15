@@ -29,6 +29,14 @@ public:
     { out << "[Op2OpEdge: "<<fromOpID<<":"<<fromOpPort<<" -> "<<toOpID<<":"<<toOpPort<<"]"; return out; }
 };
 
+
+/*******************************************************
+ * assign API for hetro filters
+ * ***************************************************/
+
+#ifdef ENABLE_HETRO_FILTERS
+bool assign_filters( MRN::NetworkTopology* nettop, int be_filter, int cp_filter, int fe_filter, std::string& up );
+#endif 
 /***************************************
 * Utility Functions for flow
 ***************************************/

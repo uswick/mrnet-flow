@@ -460,6 +460,8 @@ int MRNetFESourceOperator::initMRNet() {
     comm_BC = net->get_BroadcastCommunicator();
 
     #ifdef ENABLE_HETRO_FILTERS
+    MRN::NetworkTopology * nettop = net->get_NetworkTopology();
+    
     int be_filter_id = net->load_FilterFunc( so_file, BE_filter );
     if( be_filter_id == -1 ){
         fprintf( stderr, "ERROR: failed to load %s from library %s\n", BE_filter, so_file );
@@ -490,7 +492,7 @@ int MRNetFESourceOperator::initMRNet() {
 
     // use custom BE/CP/FE upstream data filters
     std::string up;
-    if( ! assign_filters(net, be_filter_id, cp_filter_id, fe_filter_id, up) ) {
+    if( ! assign_filters(nettop, be_filter_id, cp_filter_id, fe_filter_id, up) ) {
         fprintf( stderr, "ERROR: generate_filter_assignments() failed\n");
         delete net;
         return -1;

@@ -266,7 +266,7 @@ void SynchOperator::streamFinished(unsigned int inStreamIdx) {
       if(*it == inStreamIdx){
           //remove this from list - this stream is done
           #ifdef VERBOSE
-          printf("[SyncOperator]: stream finished via inStreamIdx : %u PID : %d \n", *it, getpid());
+          printf("[SyncOperator]: stream finished via inStreamIdx : %u PID : %d  thread ID: %lu \n", *it, getpid(), pthread_self());
           #endif
           it = unFinishedStreams.erase(it);
       }else {
@@ -276,7 +276,7 @@ void SynchOperator::streamFinished(unsigned int inStreamIdx) {
 
   if(!finishedOperator && unFinishedStreams.size() == 0) {
     #ifdef VERBOSE
-    printf("[SyncOperator]: calling instreamFinished() \n");
+    printf("[SyncOperator]: calling instreamFinished() PID : %d  thread ID: %lu \n", getpid(), pthread_self());
     #endif
     inStreamsFinished();
     finishedOperator = true; 
