@@ -35,7 +35,7 @@ extern "C" {
 const char *defaultFlowFilter_format_string = "%auc";
 const char *CP_FlowFilter_format_string = "%auc";
 
-glst_t *initAndGetGlobal(void **, MRNetInfo& minfo, filter_type ftr);
+glst_t *initAndGetGlobal(void **, MRNetContext& minfo, filter_type ftr);
 
 bool filter_initialized = false ;
 
@@ -81,7 +81,7 @@ void defaultFlowFilter(std::vector< PacketPtr > &packets_in,
     printf("[MRNET FE filter]: This is a front-end filter.  PID : %d thread ID : %lu tag_id==EXIT ? : %d  \n", getpid(), pthread_self(), tag_id == FLOW_EXIT);
     #endif
     //create parameter object
-    MRNetInfo minfo;
+    MRNetContext minfo;
     minfo.net = net;
     minfo.packets_in = &packets_in;
     minfo.packets_out = &packets_out;
@@ -95,8 +95,8 @@ void defaultFlowFilter(std::vector< PacketPtr > &packets_in,
     //initialize with MRNet runtime data
     SharedPtr<MRNetFilterSourceOperator> source_op = dynamicPtrCast<MRNetFilterSourceOperator>(state->op);
     SharedPtr<MRNetFilterOutOperator> sink_op = dynamicPtrCast<MRNetFilterOutOperator>(state->sink);
-    source_op->setMRNetInfoObject(minfo);
-    sink_op->setMRNetInfoObject(minfo);
+    source_op->setMRNetContextObject(minfo);
+    sink_op->setMRNetContextObject(minfo);
 
     //exectue workflow
     state->op->work();
@@ -130,7 +130,7 @@ void CP_FlowFilter(std::vector< PacketPtr > &packets_in,
     stream->get_ChildRanks(peers);
     //handle special BE case
     //create parameter object
-    MRNetInfo minfo;
+    MRNetContext minfo;
     minfo.net = net;
     minfo.packets_in = &packets_in;
     minfo.packets_out = &packets_out;
@@ -144,8 +144,8 @@ void CP_FlowFilter(std::vector< PacketPtr > &packets_in,
     //initialize with MRNet runtime data
     SharedPtr<MRNetFilterSourceOperator> source_op = dynamicPtrCast<MRNetFilterSourceOperator>(state->op);
     SharedPtr<MRNetFilterOutOperator> sink_op = dynamicPtrCast<MRNetFilterOutOperator>(state->sink);
-    source_op->setMRNetInfoObject(minfo);
-    sink_op->setMRNetInfoObject(minfo);
+    source_op->setMRNetContextObject(minfo);
+    sink_op->setMRNetContextObject(minfo);
 
     //exectue workflow
     state->op->work();
@@ -161,16 +161,16 @@ void CP_FlowFilter(std::vector< PacketPtr > &packets_in,
 * Initialize/setup state - state_data will persist through out the stream communication
 * init communication constructs including queues/signals and threads.
 */
-glst_t *initAndGetGlobal(void **state_data, MRNetInfo& minfo, filter_type ftr) {
+glst_t *initAndGetGlobal(void **state_data, MRNetContext& minfo, filter_type ftr) {
     glst_t *global_state;
     if (*state_data == NULL) {
 //        filter_initialized = true ;
         global_state = new glst_t;
         glst_t filter_inf;
         #ifdef ENABLE_HETRO_FILTERS
-            filter_inf = hetro_filter_flow_init(ftr);
+            filter_inf = hetro_filter_flow_init(ftr, &minfo);
         #else
-            filter_inf = filter_flow_init();
+            filter_inf = filter_flow_init(&minfo);
         #endif
 
 //        SharedPtr<SourceOperator> source = filter_flow_init();

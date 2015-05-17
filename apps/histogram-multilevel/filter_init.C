@@ -89,7 +89,7 @@ void createFilterSource2Join2OutFlow(const char* outFName, SchemaPtr schema, uns
 
 
 
-glst_t flow_init(){
+glst_t flow_init(MRNetContext* ctx= NULL){
     Flow_Init(0, NULL);
     // First, register the deserializers for all the Schemas and Operators that may be used
     registerDeserializersFilter();
@@ -100,10 +100,14 @@ glst_t flow_init(){
     // Create a Flow and write it out to a configuration file.
     int sync_interval = atoi(get_property(KEY_SYNC_INTERVAL).c_str());
     
-    printf("[Filter]: Application param initialization done. sync interval : %d\n", sync_interval);
+    int num_children = 1;
+    if(ctx != NULL){
+	num_children = ctx->peers.size() ;
+    }
+    printf("[Filter]: Application param initialization done. sync interval : %d children : %d \n", sync_interval, num_children);
     
     //createFilterSource2Join2OutFlow(CONFIG_FILTER, fileSchema, NUM_STREAMS, sync_interval);
-    createFilterSource2Join2OutFlow(CONFIG_FILTER, fileSchema, 2, sync_interval);
+    createFilterSource2Join2OutFlow(CONFIG_FILTER, fileSchema, num_children, sync_interval);
 
     FILE* opConfig = fopen(CONFIG_FILTER, "r");
     FILEStructureParser parser(opConfig, 10000);
@@ -117,19 +121,19 @@ glst_t flow_init(){
 }
 
 #ifdef ENABLE_HETRO_FILTERS
-glst_t hetro_filter_flow_init(filter_type type){
+glst_t hetro_filter_flow_init(filter_type type, MRNetContext* ctx){
     #ifdef VERBOSE
     printf("[Filter]: Hetro Filter callback \n");
     #endif
     //in this case FE/BE and CP has all the same operators
     if(type == FE_BE_FILTER){
-        return flow_init();
+        return flow_init(ctx);
     }else if (type == CP_FILTER){
-        return flow_init();
+        return flow_init(ctx);
     }
 }
 #else
-glst_t filter_flow_init(){
-        return flow_init();
+glst_t filter_flow_init(MRNetContext* ctx){
+        return flow_init(ctx);
 }
 #endif

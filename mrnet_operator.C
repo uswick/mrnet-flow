@@ -122,7 +122,7 @@ MRNetFilterSourceOperator::MRNetFilterSourceOperator(properties::iterator props)
 }
 
 
-void MRNetFilterSourceOperator::setMRNetInfoObject(MRNetInfo &inf) {
+void MRNetFilterSourceOperator::setMRNetContextObject(MRNetContext &inf) {
     mrn_info = inf;
 }
 
@@ -293,7 +293,7 @@ MRNetFilterOutOperator::MRNetFilterOutOperator(properties::iterator props) : Asy
 
 }
 
-void MRNetFilterOutOperator::setMRNetInfoObject(MRNetInfo &inf) {
+void MRNetFilterOutOperator::setMRNetContextObject(MRNetContext &inf) {
     mrn_info = inf;
     packets_out = inf.packets_out;
 }
@@ -480,8 +480,9 @@ int MRNetFESourceOperator::initMRNet() {
         delete net;
         return -1;
     }
-    printf("FE: Loaded custom filters\n");
-
+    #ifdef VERBOSE
+    printf("[FE]: Loaded custom filters\n");
+    #endif	
     // use default (TFILTER_NULL) filter for downstream
     std::string down = "";
 

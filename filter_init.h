@@ -21,8 +21,8 @@ typedef enum{
 
 extern glst_t nullFilterInfo;
 
-glst_t filter_flow_init();
+glst_t filter_flow_init(MRNetContext* ctxt = NULL);
 
 #ifdef ENABLE_HETRO_FILTERS
-glst_t hetro_filter_flow_init(filter_type type);
+glst_t hetro_filter_flow_init(filter_type type, MRNetContext* ctx= NULL);
 #endif

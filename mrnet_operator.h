@@ -101,7 +101,7 @@ public:
 * on them and also to push resulting data packets (serialize) upstream on MRNet  Tree
 * */
 
-class MRNetInfo{
+class MRNetContext{
 public:
     MRN::Network *net;
     int stream_id;
@@ -128,7 +128,7 @@ class MRNetFilterSourceOperator : public SourceOperator {
 private:
     SchemaPtr schema;
     StreamBuffer * streamBuf;
-    MRNetInfo mrn_info;
+    MRNetContext mrn_info;
     std::map<unsigned int, unsigned int> out_ranks;
     unsigned int curr_assignment;    
 	
@@ -162,7 +162,7 @@ public:
     // After this call the operator's work() function may be called.
     void outConnectionsComplete();
 
-    void setMRNetInfoObject(MRNetInfo &inf);
+    void setMRNetContextObject(MRNetContext &inf);
 
     // Called after the outputs of this Operator have been initialized.
     // The function is expected to return when there is no more data to be processed.
@@ -190,7 +190,7 @@ class MRNetFilterOutOperator : public AsynchOperator {
 private:
     // Records whether we need to close the file in the destructor or whether it will be destroyed by users of this Operator
     std::vector<MRN::PacketPtr> *packets_out;
-    MRNetInfo mrn_info;
+    MRNetContext mrn_info;
 
 public:
     // Loads the Operator from its serialized representation
@@ -202,7 +202,7 @@ public:
     ~MRNetFilterOutOperator();
 
 
-    void setMRNetInfoObject(MRNetInfo &inf);
+    void setMRNetContextObject(MRNetContext &inf);
     // Called to signal that all the incoming streams have been connected. Returns the schemas
     // of the outgoing streams based on the schemas of the incoming streams.
     std::vector<SchemaPtr> inConnectionsComplete();

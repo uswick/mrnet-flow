@@ -6,7 +6,7 @@ BOOST_INSTALL_DIR=/N/u/uswickra/Karst/boost/boost_1_52_0/install
 #HIST_ML_FLAGS= 
 HIST_ML_FLAGS= -DENABLE_HETRO_FILTERS
 
-MRNET_CXXFLAGS = -g -fPIC ${HIST_ML_FLAGS} -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -DVERBOSE  \
+MRNET_CXXFLAGS = -g -fPIC ${HIST_ML_FLAGS} -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS  \
 				-I${REPO_PATH}/include/mrnet  \
 				-I${BOOST_INSTALL_DIR}/include  \
 				-I${REPO_PATH}/include  \
@@ -20,7 +20,7 @@ TEST_CXXFLAGS= -g  -Iapps/histogram/tests/ -std=c++11
 
 CXX = g++
 #CXX = clang++
-CXXFLAGS = -fPIC -g  -I${BOOST_INSTALL_DIR}/include -std=c++11 -DVERBOSE
+CXXFLAGS = -fPIC -g  -I${BOOST_INSTALL_DIR}/include -std=c++11 
 
 LDFLAGS = -L${BOOST_INSTALL_DIR}/lib -lboost_thread -lboost_system
 
