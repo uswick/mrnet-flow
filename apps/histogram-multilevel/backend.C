@@ -57,9 +57,9 @@ void createSource2SinkFlowBackend(const char *outFName, int min, int max, int ma
         out << join.props->tagStr();
         ++opID;
 
-        SynchedHistogramJoinOperatorConfig histJoin(opID, interval);
+        /*SynchedHistogramJoinOperatorConfig histJoin(opID, interval);
         out << histJoin.props->tagStr();
-        ++opID;
+        ++opID;*/
 
         MRNetBackendOutOperatorConfig sink(opID);
         out << sink.props->tagStr();
@@ -77,9 +77,9 @@ void createSource2SinkFlowBackend(const char *outFName, int min, int max, int ma
         out << source2RecJoin.props.tagStr();
         ++opID;
 
-        StreamConfig recjoin2HistJoin(opID, 0, opID+1, 0);
+        /*StreamConfig recjoin2HistJoin(opID, 0, opID+1, 0);
         out << recjoin2HistJoin.props.tagStr();
-        ++opID;
+        ++opID;*/
 
         StreamConfig histjoin2Sink(opID, 0, opID+1, 0);
         out << histjoin2Sink.props.tagStr();
