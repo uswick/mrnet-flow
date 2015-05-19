@@ -121,6 +121,14 @@ MRNetFilterSourceOperator::MRNetFilterSourceOperator(properties::iterator props)
     assert(schema);
 }
 
+MRNetFilterSourceOperator::MRNetFilterSourceOperator(unsigned int numInputs, unsigned int numOutputs, unsigned int ID, SchemaPtr sch)
+	:SourceOperator(numInputs, numOutputs, ID){
+    char *internalBuffer = (char *) malloc(10000);
+    streamBuf = new StreamBuffer(internalBuffer, 10000);
+    curr_assignment = 0 ;
+    schema = sch;
+    assert(schema);
+}
 
 void MRNetFilterSourceOperator::setMRNetContextObject(MRNetContext &inf) {
     mrn_info = inf;
@@ -293,6 +301,10 @@ MRNetFilterOutOperator::MRNetFilterOutOperator(properties::iterator props) : Asy
 
 }
 
+MRNetFilterOutOperator::MRNetFilterOutOperator(unsigned int numInputs, unsigned int numOutputs, unsigned int ID): AsynchOperator(numInputs, numOutputs, ID){
+
+}
+
 void MRNetFilterOutOperator::setMRNetContextObject(MRNetContext &inf) {
     mrn_info = inf;
     packets_out = inf.packets_out;
@@ -408,6 +420,33 @@ void MRNetFESourceOperator::Failure_Callback(Event *evt, void *) {
             (evt->get_Type() == TopologyEvent::TOPOL_REMOVE_NODE))
         saw_failure = true;
 }
+MRNetFESourceOperator::MRNetFESourceOperator(unsigned int numInputs, unsigned int numOutputs, unsigned int ID, 
+		char* top_f, char* back_exe, char* so_f, SchemaPtr sch):SourceOperator(numInputs, numOutputs, ID){
+
+    topology_file = top_f;
+    assert(topology_file);
+
+    backend_exe = back_exe;
+    assert(backend_exe);
+
+    so_file = so_f;
+    assert(so_file);
+
+    dummy_argv = NULL;
+    
+    schema = sch;
+    assert(schema);
+
+    //init stream buffer
+    char *internalBuffer = (char *) malloc(10000);
+    streamBuf = new StreamBuffer(internalBuffer, 10000);
+
+    int ret = initMRNet();
+    assert(ret);
+    init = false;
+    fprintf(stdout, "[FE]: initialization complete PID : %d thread ID : %lu \n", getpid(), pthread_self());
+}
+
 
 MRNetFESourceOperator::MRNetFESourceOperator(properties::iterator props) : SourceOperator(props.next()) {
     topology_file = (char *) props.get("topology_file").c_str();
@@ -736,6 +775,12 @@ extern char **BE_ARGS;
 using namespace MRN;
 
 MRNetBEOutOperator::MRNetBEOutOperator(properties::iterator props) : AsynchOperator(props.next()) {
+    net = Network::CreateNetworkBE(BE_ARG_CNT, BE_ARGS);
+    init = false;
+    fprintf(stdout, "[BE]: initialization complete PID : %d thread ID : %lu  \n", getpid(), pthread_self());
+}
+
+MRNetBEOutOperator::MRNetBEOutOperator(unsigned int numInputs, unsigned int numOutputs, unsigned int ID):AsynchOperator(numInputs, numOutputs, ID){
     net = Network::CreateNetworkBE(BE_ARG_CNT, BE_ARGS);
     init = false;
     fprintf(stdout, "[BE]: initialization complete PID : %d thread ID : %lu  \n", getpid(), pthread_self());

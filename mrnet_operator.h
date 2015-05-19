@@ -147,6 +147,7 @@ private:
 public:
     // Loads the Operator from its serialized representation
     MRNetFilterSourceOperator(properties::iterator props);
+    MRNetFilterSourceOperator(unsigned int numInputs, unsigned int numOutputs, unsigned int ID, SchemaPtr sch);
 
     // Creates an instance of the Operator from its serialized representation
     static OperatorPtr create(properties::iterator props);
@@ -195,6 +196,7 @@ private:
 public:
     // Loads the Operator from its serialized representation
     MRNetFilterOutOperator(properties::iterator props);
+    MRNetFilterOutOperator(unsigned int numInputs, unsigned int numOutputs, unsigned int ID);
 
     // Creates an instance of the Operator from its serialized representation
     static OperatorPtr create(properties::iterator props);
@@ -239,6 +241,7 @@ private:
 public:
     // Loads the Operator from its serialized representation
     MRNetBEOutOperator(properties::iterator props);
+    MRNetBEOutOperator(unsigned int numInputs, unsigned int numOutputs, unsigned int ID);
 
     // Creates an instance of the Operator from its serialized representation
     static OperatorPtr create(properties::iterator props);
@@ -303,6 +306,7 @@ private:
 public:
     // Loads the Operator from its serialized representation
     MRNetFESourceOperator(properties::iterator props);
+    MRNetFESourceOperator(unsigned int numInputs, unsigned int numOutputs, unsigned int ID, char* top_f, char* back_exe, char* so_f, SchemaPtr sch);
 
     int initMRNet();
     static void Failure_Callback( MRN::Event* evt, void* )  ;

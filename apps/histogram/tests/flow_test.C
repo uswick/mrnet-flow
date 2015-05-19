@@ -27,6 +27,7 @@ void registerTest(string test_name, test_func t){
     }
 }
 
+
 void printTestSummary(int passed, int failed){
     cout << endl;
     cout << endl;
@@ -37,6 +38,11 @@ void printTestSummary(int passed, int failed){
     cout << "[******************************** End  Summary ********************************]" << endl;
     cout << endl;
 }
+
+void runIntegrationTests(string label){
+
+}
+
 
 void runTests(string lbl){
     cout << "[Start of Test Suite : { " << lbl << " } {number of tests : " << testRegistry.size()  << "} ]" << endl;

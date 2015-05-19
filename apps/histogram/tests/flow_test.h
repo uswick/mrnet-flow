@@ -16,6 +16,7 @@ void testFailure();
 
 void registerTest(string test_name, test_func t);
 void runTests(string label = "Default Flow Tests");
+void runIntegrationTests(string label = "Default MRNet Flow Integration Tests");
 
 // Operator that writes received Data objects to a given FILE* using the Schema of its single input stream
 template <class keyType, class valType>
