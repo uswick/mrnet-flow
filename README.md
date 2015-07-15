@@ -9,16 +9,16 @@ Boost 1.54/1.55 (Boost thread/chrono/timer/system)
 
 following variables must be exported;
 
-#export PATH=/g/g92/uswickra/Flow/mrnet-flow:$PATH
-#path to app executables
-export PATH=/g/g92/uswickra/Flow/mrnet-flow/apps/histogram-multilevel:$PATH
-#path to configuration home (topology/app properties ,etc)
-export FLOW_HOME=/g/g92/uswickra/Flow/mrnet-flow
+`#export PATH=/g/g92/uswickra/Flow/mrnet-flow:$PATH`
+`#path to app executables`
+`export PATH=/g/g92/uswickra/Flow/mrnet-flow/apps/histogram-multilevel:$PATH`
+`#path to configuration home (topology/app properties ,etc)`
+`export FLOW_HOME=/g/g92/uswickra/Flow/mrnet-flow`
 
-#library path to filter.so
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/g/g92/uswickra/Flow/mrnet-flow/apps/histogram-multilevel
-#library path to boost
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/tools/boost-1.57.0/lib
+`#library path to filter.so`
+`export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/g/g92/uswickra/Flow/mrnet-flow/apps/histogram-multilevel`
+`#library path to boost`
+`export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/tools/boost-1.57.0/lib`
 
 
 How to build/run Histogram application with MRNet->
