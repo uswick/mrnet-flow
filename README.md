@@ -23,10 +23,10 @@ following variables must be exported;
 
 `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/g/g92/uswickra/Flow/mrnet-flow/apps/histogram-multilevel`
 
-`#library path to boost`
+`#library path to boost/mrnet`
 
 `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/tools/boost-1.57.0/lib`
-
+`export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/tools/mrnet-4.1.0/lib`
 
 How to build/run Histogram application with MRNet->
 -------------------------------------------------
