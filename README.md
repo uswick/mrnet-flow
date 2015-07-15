@@ -11,15 +11,15 @@ following variables must be exported;
 
 `#export PATH=/g/g92/uswickra/Flow/mrnet-flow:$PATH`
 
-`#path to app executables`
+`#path to app executables - directory where the app resides`
 
 `export PATH=/g/g92/uswickra/Flow/mrnet-flow/apps/histogram-multilevel:$PATH`
 
-`#path to configuration home (topology/app properties ,etc)`
+`#path to configuration home (topology/app properties ,etc) - by default flow install directory`
 
 `export FLOW_HOME=/g/g92/uswickra/Flow/mrnet-flow`
 
-`#library path to filter.so`
+`#library path to filter.so - directory where the app filter resides `
 
 `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/g/g92/uswickra/Flow/mrnet-flow/apps/histogram-multilevel`
 
