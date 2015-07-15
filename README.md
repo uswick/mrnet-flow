@@ -66,6 +66,8 @@ c) once project is built simply execute in app directory (ie:- for histogram ==>
 
 d) A successfull execution (of histogram/app) shows similar output to following..
 
+
+
 `[Reading application configuration from : /g/g92/uswickra/Flow/mrnet-flow/app.properties completed.. !`
 
 `[FE]: Application param initialization done. sync interval : 2`
