@@ -41,7 +41,7 @@ using cmake build:
 Final install directory structure would look like following :
 
 \|--- bin\
-\|&nbsp;&nbsp;&nbsp;|--- dataTest\
+\| |--- dataTest\
 \|&nbsp;&nbsp;&nbsp;|--- demo_backend\
 \|&nbsp;&nbsp;&nbsp;|--- demo_front\
 \|&nbsp;&nbsp;&nbsp;|--- histogram\
