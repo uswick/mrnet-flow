@@ -40,10 +40,10 @@ using cmake build:
 
 Final install directory structure would look like following :
 
-|-- bin
-|   |-- dataTest
-|   |-- demo_backend
-|   |-- demo_front
+`|-- bin`
+`|   |-- dataTest`
+`|   |-- demo_backend`
+`|   |-- demo_front`
 |   |-- histogram
 |   |   |-- backend
 |   |   |-- front
