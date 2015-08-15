@@ -1,0 +1,1 @@
+cmake -DCMAKE_C_COMPILER=`which gcc` -DCMAKE_CXX_COMPILER=`which g++` -DMRNET_INSTALL_DIR=/g/g92/uswickra/Flow/mrnet/mrnet_4.1.0 -DBOOST_ROOT=/usr/local/tools/boost-1.57.0/ -DCMAKE_INSTALL_PREFIX=../install ../

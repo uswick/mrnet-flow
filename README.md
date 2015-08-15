@@ -5,38 +5,73 @@ MRNet integration of Flow engine
 prerequsites
 ---------------------------------------
 MRNet v4.1.0
-Boost 1.54/1.55 (Boost thread/chrono/timer/system)
+Boost 1.55+ (Boost thread/chrono/timer/system)
 
 following variables must be exported;
 
-`#export PATH=/g/g92/uswickra/Flow/mrnet-flow:$PATH`
+`#export PATH=/g/g92/uswickra/Flow/mrnet-flow/[install]/bin/histogram-multilevel:$PATH`
 
 `#path to app executables - directory where the app resides`
 
-`export PATH=/g/g92/uswickra/Flow/mrnet-flow/apps/histogram-multilevel:$PATH`
+`export PATH=/g/g92/uswickra/Flow/mrnet-flow/[install]/bin/histogram-multilevel:$PATH`
 
 `#path to configuration home (topology/app properties ,etc) - by default flow install directory`
 
-`export FLOW_HOME=/g/g92/uswickra/Flow/mrnet-flow`
+`export FLOW_HOME=/g/g92/uswickra/Flow/mrnet-flow/[install]/bin/histogram-multilevel`
 
-`#library path to filter.so - directory where the app filter resides `
+`#library path to filter.so - directory where the app filter resides ` (optional)
 
-`export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/g/g92/uswickra/Flow/mrnet-flow/apps/histogram-multilevel`
+`export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/g/g92/uswickra/Flow/mrnet-flow/[install]/bin/histogram-multilevel`
 
-`#library path to boost/mrnet`
+`#library path to boost/mrnet` (optional)
 
 `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/tools/boost-1.57.0/lib`
 `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/tools/mrnet-4.1.0/lib`
 
-How to build/run Histogram application with MRNet->
--------------------------------------------------
-`$ make clean histogram-ml`
 
-
-How to build/run without MRNet->
+How to build/run with MRNet->
 ---------------------------------------
-`$ make clean dataTest`
+using cmake build:
 
+	mkdir build && cd build
+	cmake -DCMAKE_C_COMPILER=`which gcc` -DCMAKE_CXX_COMPILER=`which g++` -DMRNET_INSTALL_DIR=[path to mrnet install dir] -DBOOST_ROOT=[path to boost install dir] -DCMAKE_INSTALL_PREFIX=../install ../ 
+	make && make install
+	
+
+Final install directory structure would look like following :
+|-- bin
+|   |-- dataTest
+|   |-- demo_backend
+|   |-- demo_front
+|   |-- histogram
+|   |   |-- backend
+|   |   |-- front
+|   |   `-- libfilter.so
+|   |-- histogram-multilevel
+|   |   |-- backend
+|   |   |-- front
+|   |   `-- libfilter.so
+|   `-- simple_topgen
+|-- include
+|   |-- data.h
+|   |-- filter_init.h
+|   |-- mrnet_flow.h
+|   |-- mrnet_operator.h
+|   |-- operator.h
+|   |-- process.h
+|   |-- schema.h
+|   |-- sight_common_internal.h
+|   `-- utils.h
+`-- lib
+    |-- libdemo_filter.so
+    `-- libflow.a
+
+
+we have maintained a Makefile based build as well (depricated)
+
+	make clean [target]    
+
+target can be any one of 'mrnop', 'dataTest' , 'histogram-ml' , 'histogram' 
 
 
 How to run->
@@ -58,13 +93,13 @@ b) modify MRNet topology file to suite your configuration, an
    3 leaf node configuration is the default setting. Topology 
    file ${Flow_Dir}/top_file
            
-c) once project is built simply execute in app directory (ie:- for histogram ==> apps/histogram-ml )
+c) once project is built simply execute it in [install]/bin/[app] directory (ie:- for histogram ==> [install]/bin/histogram-ml )
 
    `$ ./front`
    OR
-   `$ apps/histogram-multilevel/front`
+   `$ [install]/bin/histogram-multilevel/front`
 
-d) A successfull execution (of histogram/app) shows similar output to following..
+d) A successfull execution (of histogram application) shows similar output to following..
 
 
 
