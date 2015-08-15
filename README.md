@@ -40,32 +40,32 @@ using cmake build:
 
 Final install directory structure would look like following :
 
-`|-- bin`
-`|   |-- dataTest`
-`|   |-- demo_backend`
-`|   |-- demo_front`
-|   |-- histogram
-|   |   |-- backend
-|   |   |-- front
-|   |   `-- libfilter.so
-|   |-- histogram-multilevel
-|   |   |-- backend
-|   |   |-- front
-|   |   `-- libfilter.so
-|   `-- simple_topgen
-|-- include
-|   |-- data.h
-|   |-- filter_init.h
-|   |-- mrnet_flow.h
-|   |-- mrnet_operator.h
-|   |-- operator.h
-|   |-- process.h
-|   |-- schema.h
-|   |-- sight_common_internal.h
-|   `-- utils.h
-`-- lib
-    |-- libdemo_filter.so
-    `-- libflow.a
+\|--- bin\
+\|&nbsp;&nbsp;&nbsp;|--- dataTest\
+\|&nbsp;&nbsp;&nbsp;|--- demo_backend\
+\|&nbsp;&nbsp;&nbsp;|--- demo_front\
+\|&nbsp;&nbsp;&nbsp;|--- histogram\
+\|&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|--- backend\
+\|&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|--- front\
+\|&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;\`--- libfilter.so\
+\|&nbsp;&nbsp;&nbsp;|--- histogram-multilevel\
+\|&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|--- backend\
+\|&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;|--- front\
+\|&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;\`--- libfilter.so\
+\|&nbsp;&nbsp;&nbsp;\`--- simple_topgen\
+\|--- include\
+\|&nbsp;&nbsp;&nbsp;|--- data.h\
+\|&nbsp;&nbsp;&nbsp;|--- filter_init.h\
+\|&nbsp;&nbsp;&nbsp;|--- mrnet_flow.h\
+\|&nbsp;&nbsp;&nbsp;|--- mrnet_operator.h\
+\|&nbsp;&nbsp;&nbsp;|--- operator.h\
+\|&nbsp;&nbsp;&nbsp;|--- process.h\
+\|&nbsp;&nbsp;&nbsp;|--- schema.h\
+\|&nbsp;&nbsp;&nbsp;|--- sight_common_internal.h\
+\|&nbsp;&nbsp;&nbsp;\`--- utils.h\
+\`--- lib\
+    \|--- libdemo_filter.so\
+    \`--- libflow.a
 
 
 we have maintained a Makefile based build as well (depricated)
